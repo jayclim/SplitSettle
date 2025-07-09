@@ -49,7 +49,7 @@ export function AIExpenseModal({ open, onClose, groupId, members, onExpenseCreat
       const result = await processAIExpense({
         groupId,
         description: data.description
-      });
+      }) as { parsedExpense: Partial<CreateExpenseData> };
 
       setParsedExpense(result.parsedExpense);
       

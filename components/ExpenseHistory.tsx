@@ -24,7 +24,7 @@ export function ExpenseHistory({ groupId }: ExpenseHistoryProps) {
       setLoading(true);
       console.log('Loading expenses for group:', groupId);
       const response = await getExpenses(groupId);
-      setExpenses(response.expenses);
+      setExpenses((response as { expenses: Expense[] }).expenses);
     } catch (error) {
       console.error('Error loading expenses:', error);
       toast({
