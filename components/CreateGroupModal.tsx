@@ -20,7 +20,7 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateGroupData>();
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateGroupData>();
 
   const templates = [
     {
@@ -51,12 +51,12 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
 
   const handleTemplateSelect = (template: typeof templates[0]) => {
     setStep(2);
-    // Pre-fill form with template data
+    // Pre-fill form with template data using setValue
     if (template.defaultName) {
-      (document.getElementById('groupName') as HTMLInputElement).value = template.defaultName;
+      setValue('name', template.defaultName);
     }
     if (template.defaultDescription) {
-      (document.getElementById('groupDescription') as HTMLTextAreaElement).value = template.defaultDescription;
+      setValue('description', template.defaultDescription);
     }
   };
 
