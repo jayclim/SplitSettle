@@ -84,10 +84,10 @@ export function LandingPage() {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => router.push('/login')}>
+            <Button variant="ghost" onClick={() => router.push('/auth/login')}>
               Sign In
             </Button>
-            <Button onClick={() => router.push('/register')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+            <Button onClick={() => router.push('/auth/register')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               Try It Free
             </Button>
           </div>

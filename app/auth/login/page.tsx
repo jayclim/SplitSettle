@@ -1,3 +1,4 @@
+// filepath: app/login/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -16,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { LogIn } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type LoginForm = {
   email: string;
@@ -26,19 +28,24 @@ type LoginForm = {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginForm>();
+  const supabase = createClient();
 
   const onSubmit = async (data: LoginForm) => {
     try {
       setLoading(true);
-      await login(data.email, data.password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      if (error) throw error;
       toast({
         title: "Success",
         description: "Logged in successfully",
       });
-      router.push("/");
+      router.push("/dashboard");
+      router.refresh(); // Important to re-fetch server components
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred";
@@ -92,14 +99,8 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button
-            variant="link"
-            className="text-sm text-muted-foreground"
-            onClick={() => router.push("/register")}
-          >
-            Don't have an account? Sign up
-          </Button>
+        <CardFooter className="text-sm">
+          <p>Don't have an account? <Link href="/register" className="underline">Sign up</Link></p>
         </CardFooter>
       </Card>
     </div>

@@ -3,19 +3,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Button } from './ui/button';
 import { Users, MessageCircle, DollarSign } from 'lucide-react';
-import { Group } from '@/api/groups';
 import { useRouter } from 'next/navigation';
+import { GroupCardData } from '@/lib/actions/groups'; // Import the correct data type
 
 interface GroupCardProps {
-  group: Group;
+  group: GroupCardData; // Use the correct data type
 }
 
 export function GroupCard({ group }: GroupCardProps) {
   const router = useRouter();
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null) => {
+    if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -33,7 +33,7 @@ export function GroupCard({ group }: GroupCardProps) {
   const balance = formatBalance(group.balance);
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => router.push(`/groups/${group._id}`)}>
+    <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group h-full flex flex-col" onClick={() => router.push(`/groups/${group.id}`)}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
@@ -46,11 +46,11 @@ export function GroupCard({ group }: GroupCardProps) {
           )}
         </div>
         {group.description && (
-          <p className="text-sm text-muted-foreground">{group.description}</p>
+          <p className="text-sm text-muted-foreground h-10 overflow-hidden text-ellipsis">{group.description}</p>
         )}
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 mt-auto">
         {/* Members */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -61,8 +61,8 @@ export function GroupCard({ group }: GroupCardProps) {
           </div>
           <div className="flex -space-x-2">
             {group.members.slice(0, 3).map((member) => (
-              <Avatar key={member._id} className="h-6 w-6 border-2 border-white">
-                <AvatarImage src={member.avatar} />
+              <Avatar key={member.id} className="h-6 w-6 border-2 border-white">
+                <AvatarImage src={member.avatarUrl || undefined} />
                 <AvatarFallback className="text-xs">
                   {getInitials(member.name)}
                 </AvatarFallback>

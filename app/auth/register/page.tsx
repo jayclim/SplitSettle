@@ -1,3 +1,4 @@
+// filepath: app/register/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -16,27 +17,40 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/useToast";
 import { UserPlus } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type RegisterForm = {
   email: string;
   password: string;
+  name: string; // Add name field
 };
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { register: registerUser } = useAuth();
   const router = useRouter();
   const { register, handleSubmit } = useForm<RegisterForm>();
+  const supabase = createClient();
 
   const onSubmit = async (data: RegisterForm) => {
     try {
       setLoading(true);
-      await registerUser(data.email, data.password);
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          // Pass user metadata to be used by the trigger
+          data: {
+            name: data.name,
+            avatar_url: `https://api.dicebear.com/8.x/initials/svg?seed=${data.name}`
+          }
+        }
+      });
+      if (error) throw error;
       toast({
         title: "Success",
-        description: "Account created successfully",
+        description: "Account created. Please check your email to verify.",
       });
       router.push("/login");
     } catch (error) {
@@ -62,6 +76,14 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+             <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter your full name"
+                {...register("name", { required: true })}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -92,14 +114,8 @@ export default function RegisterPage() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button
-            variant="link"
-            className="text-sm text-muted-foreground"
-            onClick={() => router.push("/login")}
-          >
-            Already have an account? Sign in
-          </Button>
+         <CardFooter className="text-sm">
+          <p>Already have an account? <Link href="/login" className="underline">Sign In</Link></p>
         </CardFooter>
       </Card>
     </div>

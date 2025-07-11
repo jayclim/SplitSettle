@@ -1,39 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import * as React from "react"
 import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
+
 import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light")
-
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark")
-    setTheme(isDark ? "dark" : "light")
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light"
-    setTheme(newTheme)
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
+  const { setTheme, theme } = useTheme()
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={toggleTheme}
+      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       className="w-9 h-9 rounded-full transition-colors hover:bg-accent"
     >
-      {theme === "dark" ? (
-        <Sun className="h-5 w-5 transition-all" />
-      ) : (
-        <Moon className="h-5 w-5 transition-all" />
-      )}
+      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
