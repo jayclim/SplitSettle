@@ -111,7 +111,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              onClick={() => router.push('/register')}
+              onClick={() => router.push('/auth/register')}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-6"
             >
               Try It Free
@@ -239,7 +239,7 @@ export function LandingPage() {
             </p>
             <Button
               size="lg"
-              onClick={() => router.push('/register')}
+              onClick={() => router.push('/auth/register')}
               className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-6"
             >
               Get Started Free

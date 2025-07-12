@@ -1,9 +1,9 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { groups, users, usersToGroups, expenses, expenseSplits } from '@/lib/db/schema';
+import { usersToGroups, expenses, users } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 export type GroupMember = {
@@ -39,9 +39,25 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
 
   const groupIds = groupMemberships.map((gm) => gm.groupId);
 
-  const allGroupsMembers = await db.query.usersToGroups.findMany({
-    where: inArray(usersToGroups.groupId, groupIds),
-    with: { user: { columns: { id: true, name: true, avatarUrl: true } } },
+  // Fetch all members for the user's groups in a single query
+  const allGroupsMembers = await db.query.users.findMany({
+    columns: {
+      id: true,
+      name: true,
+      avatarUrl: true,
+    },
+    with: {
+      groups: {
+        where: inArray(usersToGroups.groupId, groupIds),
+        columns: {
+          groupId: true,
+        },
+      },
+    },
+    where: inArray(
+      users.id,
+      db.select({ userId: usersToGroups.userId }).from(usersToGroups).where(inArray(usersToGroups.groupId, groupIds))
+    ),
   });
 
   const allExpenses = await db.query.expenses.findMany({
@@ -51,8 +67,8 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
 
   const result: GroupCardData[] = groupMemberships.map(({ group }) => {
     const membersOfGroup = allGroupsMembers
-      .filter((gm) => gm.groupId === group.id)
-      .map((gm) => gm.user);
+      .filter((member) => member.groups.some((g) => g.groupId === group.id))
+      .map(({ groups, ...member }) => member); // Exclude the 'groups' property from the final member object
 
     const expensesInGroup = allExpenses.filter(e => e.groupId === group.id);
 
