@@ -1,63 +1,81 @@
 import {
+  timestamp,
   pgTable,
   text,
-  timestamp,
-  uuid,
-  serial,
+  primaryKey,
   integer,
+  serial,
   boolean,
-  jsonb,
   pgEnum,
   decimal,
-  primaryKey,
-  type PgTableWithColumns
+  uuid,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import type { AdapterAccount } from '@auth/core/adapters';
+import { relations, SQL, Placeholder } from 'drizzle-orm';
 
-// Enum for user roles within a group
+// =================================
+//          ENUMS
+// =================================
+
 export const roleEnum = pgEnum('role', ['admin', 'member']);
 
-// Enum for expense split types
-export const splitTypeEnum = pgEnum('split_type', ['equal', 'custom', 'percentage']);
+// =================================
+//          TABLES
+// =================================
 
-// Enum for message types
-export const messageTypeEnum = pgEnum('message_type', ['text', 'expense', 'settlement', 'image']);
-
-// Enum for settlement methods
-export const settlementMethodEnum = pgEnum('settlement_method', ['venmo', 'paypal', 'cash', 'bank', 'other']);
-
-// Enum for settlement statuses
-export const settlementStatusEnum = pgEnum('settlement_status', ['pending', 'confirmed', 'disputed']);
-
-// Users table to store public profile information, linked to Supabase auth users
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().references(() => authUsers.id), // References Supabase auth.users
-  name: text('name').notNull(),
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name'),
   email: text('email').notNull().unique(),
+  emailVerified: timestamp('emailVerified', { mode: 'date', withTimezone: true }),
+  image: text('image'),
   avatarUrl: text('avatar_url'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Supabase auth.users table definition for establishing relations
-export const authUsers = pgTable('users', {
-    id: uuid('id').primaryKey(),
-}, (table) => {
-    return {
-        schema: 'auth',
-    }
+export const accounts = pgTable(
+  'accounts',
+  {
+    userId: uuid('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').$type<AdapterAccount['type']>().notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('providerAccountId').notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: text('token_type'),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
+  },
+  (account) => ({
+    compoundKey: primaryKey({
+      columns: [account.provider, account.providerAccountId],
+    }),
+  })
+);
+
+export const sessions = pgTable('sessions', {
+  sessionToken: text('sessionToken').notNull().primaryKey(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { mode: 'date', withTimezone: true }).notNull(),
 });
 
+export const verificationTokens = pgTable(
+  'verification_tokens',
+  {
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { mode: 'date', withTimezone: true }).notNull(),
+  },
+  (vt) => ({
+    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  })
+);
 
-export const usersRelations = relations(users, ({ many }) => ({
-  groupMemberships: many(usersToGroups),
-  expensesPaid: many(expenses),
-  messagesSent: many(messages),
-  settlementsFrom: many(settlements, { relationName: 'settlement_from' }),
-  settlementsTo: many(settlements, { relationName: 'settlement_to' }),
-}));
-
-// Groups table
 export const groups = pgTable('groups', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
@@ -67,21 +85,100 @@ export const groups = pgTable('groups', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const usersToGroups = pgTable(
+  'users_to_groups',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    groupId: integer('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    role: roleEnum('role').default('member').notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.groupId] }),
+  })
+);
+
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  paidById: uuid('paid_by_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  date: timestamp('date', { withTimezone: true }).notNull(),
+  category: text('category'),
+  receiptUrl: text('receipt_url'),
+  settled: boolean('settled').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const expenseSplits = pgTable(
+  'expense_splits',
+  {
+    id: serial('id').primaryKey(),
+    expenseId: integer('expense_id')
+      .notNull()
+      .references(() => expenses.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  }
+  // Remove the table configuration function entirely since we're using 'id' as primary key
+);
+
+export const settlements = pgTable('settlements', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  payerId: uuid('payer_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  payeeId: uuid('payee_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  date: timestamp('date', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+type AnyPlaceholder = Placeholder<string, unknown>;
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  metadata: text('metadata').$type<AnyPlaceholder>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// =================================
+//          RELATIONS
+// =================================
+
+export const usersRelations = relations(users, ({ many }) => ({
+  groups: many(usersToGroups),
+  expenses: many(expenses),
+  expenseSplits: many(expenseSplits),
+  messages: many(messages),
+}));
+
 export const groupsRelations = relations(groups, ({ many }) => ({
   members: many(usersToGroups),
   expenses: many(expenses),
   messages: many(messages),
-  settlements: many(settlements),
-}));
-
-// Join table for the many-to-many relationship between users and groups
-export const usersToGroups = pgTable('users_to_groups', {
-  userId: uuid('user_id').notNull().references(() => users.id),
-  groupId: integer('group_id').notNull().references(() => groups.id),
-  role: roleEnum('role').notNull().default('member'),
-  joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  pk: primaryKey({ columns: [t.userId, t.groupId] }),
 }));
 
 export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
@@ -95,76 +192,47 @@ export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
   }),
 }));
 
-// Expenses table
-export const expenses = pgTable('expenses', {
-  id: serial('id').primaryKey(),
-  groupId: integer('group_id').notNull().references(() => groups.id),
-  description: text('description').notNull(),
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  paidById: uuid('paid_by_id').notNull().references(() => users.id),
-  category: text('category'),
-  receiptUrl: text('receipt_url'),
-  date: timestamp('date', { withTimezone: true }).notNull(),
-  settled: boolean('settled').default(false).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
-
 export const expensesRelations = relations(expenses, ({ one, many }) => ({
-  group: one(groups, { fields: [expenses.groupId], references: [groups.id] }),
-  paidBy: one(users, { fields: [expenses.paidById], references: [users.id] }),
+  group: one(groups, {
+    fields: [expenses.groupId],
+    references: [groups.id],
+  }),
+  paidBy: one(users, {
+    fields: [expenses.paidById],
+    references: [users.id],
+  }),
   splits: many(expenseSplits),
 }));
 
-// Expense splits table to define how an expense is split among users
-export const expenseSplits = pgTable('expense_splits', {
-  id: serial('id').primaryKey(),
-  expenseId: integer('expense_id').notNull().references(() => expenses.id),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-});
-
 export const expenseSplitsRelations = relations(expenseSplits, ({ one }) => ({
-  expense: one(expenses, { fields: [expenseSplits.expenseId], references: [expenses.id] }),
-  user: one(users, { fields: [expenseSplits.userId], references: [users.id] }),
+  expense: one(expenses, {
+    fields: [expenseSplits.expenseId],
+    references: [expenses.id],
+  }),
+  user: one(users, {
+    fields: [expenseSplits.userId],
+    references: [users.id],
+  }),
 }));
-
-// Messages table
-export const messages: PgTableWithColumns<any> = pgTable('messages', {
-  id: serial('id').primaryKey(),
-  groupId: integer('group_id').notNull().references(() => groups.id),
-  senderId: uuid('sender_id').notNull().references(() => users.id),
-  content: text('content').notNull(),
-  type: messageTypeEnum('type').notNull().default('text'),
-  replyToId: integer('reply_to_id').references(() => messages.id),
-  expenseId: integer('expense_id').references(() => expenses.id),
-  imageUrl: text('image_url'),
-  reactions: jsonb('reactions'), // e.g., [{ emoji: '👍', users: ['uuid1', 'uuid2'] }]
-  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
-});
 
 export const messagesRelations = relations(messages, ({ one }) => ({
-  group: one(groups, { fields: [messages.groupId], references: [groups.id] }),
-  sender: one(users, { fields: [messages.senderId], references: [users.id] }),
-  replyTo: one(messages, { fields: [messages.replyToId], references: [messages.id], relationName: 'reply' }),
-  expense: one(expenses, { fields: [messages.expenseId], references: [expenses.id] }),
+  group: one(groups, {
+    fields: [messages.groupId],
+    references: [groups.id],
+  }),
+  user: one(users, {
+    fields: [messages.userId],
+    references: [users.id],
+  }),
 }));
 
-// Settlements table
-export const settlements = pgTable('settlements', {
-  id: serial('id').primaryKey(),
-  groupId: integer('group_id').notNull().references(() => groups.id),
-  fromUserId: uuid('from_user_id').notNull().references(() => users.id),
-  toUserId: uuid('to_user_id').notNull().references(() => users.id),
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  method: settlementMethodEnum('method').notNull(),
-  status: settlementStatusEnum('status').notNull().default('pending'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
-});
+// =================================
+//          TYPE EXPORTS
+// =================================
 
-export const settlementsRelations = relations(settlements, ({ one }) => ({
-  group: one(groups, { fields: [settlements.groupId], references: [groups.id] }),
-  fromUser: one(users, { fields: [settlements.fromUserId], references: [users.id], relationName: 'settlement_from' }),
-  toUser: one(users, { fields: [settlements.toUserId], references: [users.id], relationName: 'settlement_to' }),
-}));
+export type NewSettlement = typeof settlements.$inferInsert;
+export type NewUser = typeof users.$inferInsert;
+export type NewGroup = typeof groups.$inferInsert;
+export type NewExpense = typeof expenses.$inferInsert;
+export type NewExpenseSplit = typeof expenseSplits.$inferInsert;
+export type NewMessage = typeof messages.$inferInsert;

@@ -13,9 +13,8 @@ import { ManualExpenseModal } from '@/components/ManualExpenseModal';
 import { GroupSettingsModal } from '@/components/GroupSettingsModal';
 import { ExpenseHistory } from '@/components/ExpenseHistory';
 import { ArrowLeft, Settings, Sparkles, Plus, Send, Smile, Paperclip } from 'lucide-react';
-import { getGroup, Group } from '@/api/groups';
-import { getMessages, sendMessage, addReaction, Message } from '@/api/messages';
-import { getBalances, Balance } from '@/api/balances';
+import { getGroup, getMessages, getBalances, sendMessage, addReaction, type GroupDetail as Group, type Message, type Balance } from '@/lib/actions/groups';
+import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +53,20 @@ export default function GroupDetail() {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [settleUpModalOpen, setSettleUpModalOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<Balance | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const getCurrentUser = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
+
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
 
   const loadGroup = async () => {
     if (!id) return;
@@ -276,7 +288,7 @@ export default function GroupDetail() {
                     <MessageBubble
                       key={message._id}
                       message={message}
-                      isOwn={message.senderId === '1'} // Mock current user ID
+                      isOwn={message.senderId === currentUserId}
                       onReply={setReplyingTo}
                       onReact={handleReaction}
                     />

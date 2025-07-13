@@ -22,6 +22,7 @@
     "test:watch": "dotenv -e .env.test.local -- jest --config=jest.config.mjs --watch"
   },
   "dependencies": {
+    "@auth/core": "^0.40.0",
     "@faker-js/faker": "^9.9.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
