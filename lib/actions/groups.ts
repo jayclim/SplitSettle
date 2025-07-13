@@ -508,3 +508,101 @@ export async function addReaction(messageId: string, emoji: string): Promise<voi
   // In a real app, you'd store reactions in a separate table
   console.log(`User ${user.id} added reaction ${emoji} to message ${messageId}`);
 }
+
+export type Expense = {
+  _id: string;
+  groupId: string;
+  description: string;
+  amount: number;
+  paidBy: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  splitBetween: {
+    _id: string;
+    name: string;
+    amount: number;
+  }[];
+  category?: string;
+  date: string;
+  createdAt: string;
+  receipt?: string;
+  settled: boolean;
+};
+
+export async function getExpenses(groupId: string): Promise<{ expenses: Expense[] }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const groupIdNum = parseInt(groupId);
+  if (isNaN(groupIdNum)) {
+    throw new Error('Invalid group ID');
+  }
+
+  // Check if user is a member of this group
+  const membership = await db.query.usersToGroups.findFirst({
+    where: and(
+      eq(usersToGroups.userId, user.id),
+      eq(usersToGroups.groupId, groupIdNum)
+    ),
+  });
+
+  if (!membership) {
+    throw new Error('Access denied: You are not a member of this group');
+  }
+
+  // Get all expenses for the group
+  const groupExpenses = await db.query.expenses.findMany({
+    where: eq(expenses.groupId, groupIdNum),
+    orderBy: [desc(expenses.createdAt)],
+    with: {
+      paidBy: {
+        columns: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
+      splits: {
+        with: {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Format expenses to match the expected interface
+  const formattedExpenses: Expense[] = groupExpenses.map((expense) => ({
+    _id: expense.id.toString(),
+    groupId: groupId,
+    description: expense.description,
+    amount: parseFloat(expense.amount),
+    paidBy: {
+      _id: expense.paidBy.id,
+      name: expense.paidBy.name || 'Unknown User',
+      avatar: expense.paidBy.avatarUrl || undefined,
+    },
+    splitBetween: expense.splits.map((split) => ({
+      _id: split.user.id,
+      name: split.user.name || 'Unknown User',
+      amount: parseFloat(split.amount),
+    })),
+    category: expense.category || undefined,
+    date: expense.date.toISOString(),
+    createdAt: expense.createdAt.toISOString(),
+    receipt: expense.receiptUrl || undefined,
+    settled: expense.settled,
+  }));
+
+  return { expenses: formattedExpenses };
+}

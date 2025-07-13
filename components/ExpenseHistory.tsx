@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Receipt, Calendar, DollarSign, Users, Filter } from 'lucide-react';
-import { getExpenses, Expense } from '@/api/expenses';
+import { getExpenses, type Expense } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
 
