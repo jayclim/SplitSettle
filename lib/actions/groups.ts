@@ -420,6 +420,51 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
 
     const netBalance = totalPaid - totalOwed;
 
+    // Calculate who this member owes money to and who owes them
+    const owesTo: { userId: string; userName: string; amount: number }[] = [];
+    const owedBy: { userId: string; userName: string; amount: number }[] = [];
+
+    // For each other member, calculate pairwise debt
+    groupMembers.forEach((otherMember) => {
+      if (otherMember.user.id === member.user.id) return; // Skip self
+
+      let memberOwesToOther = 0;
+      let otherOwesToMember = 0;
+
+      // Go through all expenses to calculate what member owes to otherMember
+      for (const expense of groupExpenses) {
+        const memberSplit = expense.splits.find(s => s.userId === member.user.id);
+        const otherSplit = expense.splits.find(s => s.userId === otherMember.user.id);
+
+        if (expense.paidById === otherMember.user.id && memberSplit) {
+          // Other member paid, current member owes their share
+          memberOwesToOther += parseFloat(memberSplit.amount);
+        }
+
+        if (expense.paidById === member.user.id && otherSplit) {
+          // Current member paid, other member owes their share
+          otherOwesToMember += parseFloat(otherSplit.amount);
+        }
+      }
+
+      // Net debt between these two people
+      const netDebt = memberOwesToOther - otherOwesToMember;
+
+      if (netDebt > 0.01) { // Member owes other member (with small tolerance for rounding)
+        owesTo.push({
+          userId: otherMember.user.id,
+          userName: otherMember.user.name || 'Unknown User',
+          amount: netDebt,
+        });
+      } else if (netDebt < -0.01) { // Other member owes current member
+        owedBy.push({
+          userId: otherMember.user.id,
+          userName: otherMember.user.name || 'Unknown User',
+          amount: Math.abs(netDebt),
+        });
+      }
+    });
+
     return {
       _id: `balance-${member.user.id}`,
       groupId: groupId,
@@ -427,8 +472,8 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
       userName: member.user.name || 'Unknown User',
       userAvatar: member.user.avatarUrl || undefined,
       amount: netBalance,
-      owesTo: [], // Mock for now - would need complex calculation
-      owedBy: [], // Mock for now - would need complex calculation
+      owesTo,
+      owedBy,
     };
   });
 

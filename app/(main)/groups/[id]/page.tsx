@@ -389,24 +389,46 @@ export default function GroupDetail() {
                             <p className="text-sm text-muted-foreground">
                               {balance.amount >= 0 ? 'Gets back' : 'Owes'}
                             </p>
+                            {/* Show specific debt details */}
+                            {balance.owesTo.length > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Owes: {balance.owesTo.map(debt => 
+                                  `$${debt.amount.toFixed(2)} to ${debt.userName}`
+                                ).join(', ')}
+                              </div>
+                            )}
+                            {balance.owedBy.length > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Owed: {balance.owedBy.map(debt => 
+                                  `$${debt.amount.toFixed(2)} by ${debt.userName}`
+                                ).join(', ')}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
                           <Badge variant="secondary" className={`${balanceInfo.bg} ${balanceInfo.color} border-0`}>
                             {balanceInfo.text}
                           </Badge>
-                          {balance.amount < 0 && (
-                            <Button 
-                              size="sm" 
-                              className="mt-2 ml-2"
-                              onClick={() => {
-                                setSelectedBalance(balance);
-                                setSettleUpModalOpen(true);
-                              }}
-                            >
-                              Settle Up
-                            </Button>
-                          )}
+                          {/* Show settle up button if current user owes money to this person */}
+                          {(() => {
+                            // Find the current user's balance to check who they owe money to
+                            const currentUserBalance = balances.find(b => b.userId === currentUserId);
+                            const owesThisPerson = currentUserBalance?.owesTo.some(debt => debt.userId === balance.userId);
+                            
+                            return owesThisPerson && (
+                              <Button 
+                                size="sm" 
+                                className="mt-2 ml-2"
+                                onClick={() => {
+                                  setSelectedBalance(balance);
+                                  setSettleUpModalOpen(true);
+                                }}
+                              >
+                                Settle Up
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </CardContent>
