@@ -1,5 +1,5 @@
 
-## 🚀 SplitTrack
+## 🚀 SplitSettle
 
 SplitSettle is a modern expense-splitting and group-settlement web application built with Next.js. It helps groups track shared expenses, calculate balances, and settle up fairly and transparently.
 
