@@ -10,7 +10,8 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sparkles, Mic, Camera, Loader2, Check, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { processAIExpense, createExpense, CreateExpenseData } from '@/api/expenses';
+import { createExpenseAction, CreateExpenseData } from '@/lib/actions/mutations';
+import { processAIExpenseAction } from '@/lib/actions/ai';
 import { GroupMember } from '@/api/groups';
 import { useToast } from '@/hooks/useToast';
 
@@ -46,19 +47,41 @@ export function AIExpenseModal({ open, onClose, groupId, members, onExpenseCreat
       setStep('processing');
       console.log('Processing AI expense:', data);
       
-      const result = await processAIExpense({
+      const result = await processAIExpenseAction({
         groupId,
         description: data.description
-      }) as { parsedExpense: Partial<CreateExpenseData> };
+      });
 
-      setParsedExpense(result.parsedExpense);
+      if (!result.success || !result.parsedExpense) {
+          throw new Error("Failed to parse expense");
+      }
+
+      const parsed = result.parsedExpense;
+      
+      // Map names to member IDs if possible (simple fuzzy match or exact match)
+      // For now, we'll just pre-fill what we can. 
+      // In a real app, we'd do smarter name matching.
+      const matchedMemberIds = members
+        .filter(m => parsed.splitBetween.some(name => m.name.toLowerCase().includes(name.toLowerCase())))
+        .map(m => m._id);
+
+      // If no members matched but splitBetween has items, default to all members or just the user
+      const finalSplitBetween = matchedMemberIds.length > 0 ? matchedMemberIds : members.map(m => m._id);
+
+      setParsedExpense({
+          description: parsed.description,
+          amount: parsed.amount,
+          splitBetween: finalSplitBetween,
+          splitType: parsed.splitType,
+          category: parsed.category
+      });
       
       // Pre-fill confirmation form
       setConfirmValue('groupId', groupId);
-      setConfirmValue('description', result.parsedExpense.description || '');
-      setConfirmValue('amount', result.parsedExpense.amount || 0);
-      setConfirmValue('splitBetween', result.parsedExpense.splitBetween || []);
-      setConfirmValue('splitType', result.parsedExpense.splitType || 'equal');
+      setConfirmValue('description', parsed.description || '');
+      setConfirmValue('amount', parsed.amount || 0);
+      setConfirmValue('splitBetween', finalSplitBetween);
+      setConfirmValue('splitType', parsed.splitType || 'equal');
       setConfirmValue('paidById', members[0]._id); // Default to first member
       
       setStep('confirm');
@@ -79,7 +102,12 @@ export function AIExpenseModal({ open, onClose, groupId, members, onExpenseCreat
     try {
       setLoading(true);
       console.log('Creating confirmed expense:', data);
-      await createExpense(data);
+      await createExpenseAction({
+          ...data,
+          groupId,
+          // Ensure splitType is set
+          splitType: data.splitType || 'equal'
+      });
       toast({
         title: "Expense added!",
         description: "Your expense has been added to the group.",

@@ -4,42 +4,21 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
-import { Receipt, Calendar, DollarSign, Users, Filter } from 'lucide-react';
+import { Receipt, Calendar, DollarSign, Users, Filter, Plus } from 'lucide-react';
 import { getExpenses, type Expense } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
+import { useGroupExpenses } from '@/hooks/useGroupDetails';
 
 interface ExpenseHistoryProps {
   groupId: string;
+  onAddExpense?: () => void;
 }
 
-export function ExpenseHistory({ groupId }: ExpenseHistoryProps) {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
+  const { data: expensesData, isLoading: loading } = useGroupExpenses(groupId);
+  const expenses = expensesData?.expenses || [];
   const [filter, setFilter] = useState<'all' | 'settled' | 'unsettled'>('all');
-  const { toast } = useToast();
-
-  const loadExpenses = async () => {
-    try {
-      setLoading(true);
-      console.log('Loading expenses for group:', groupId);
-      const response = await getExpenses(groupId);
-      setExpenses((response as { expenses: Expense[] }).expenses);
-    } catch (error) {
-      console.error('Error loading expenses:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load expenses",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadExpenses();
-  }, [groupId]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -100,6 +79,16 @@ export function ExpenseHistory({ groupId }: ExpenseHistoryProps) {
           >
             Settled
           </Button>
+          {onAddExpense && (
+            <Button
+              size="sm"
+              onClick={onAddExpense}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 ml-2"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Expense
+            </Button>
+          )}
         </div>
       </div>
 

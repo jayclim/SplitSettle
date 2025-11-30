@@ -9,7 +9,7 @@ import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Plus, Users, MapPin, Home } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createGroup, CreateGroupData } from '@/api/groups';
+import { createGroupAction, CreateGroupData } from '@/lib/actions/mutations';
 import { useToast } from '@/hooks/useToast';
 
 interface CreateGroupModalProps {
@@ -66,7 +66,7 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
     try {
       setLoading(true);
       console.log('Creating group:', data);
-      await createGroup(data);
+      await createGroupAction(data);
       toast({
         title: "Group created!",
         description: "Your new group is ready to use.",

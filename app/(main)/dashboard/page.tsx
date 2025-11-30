@@ -1,41 +1,24 @@
 // filepath: app/(main)/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GroupCard } from '@/components/GroupCard';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
 import { JoinGroupModal } from '@/components/JoinGroupModal';
 import { Users, TrendingUp, DollarSign, Sparkles } from 'lucide-react';
-import { getGroupsForUser, GroupCardData } from '@/lib/actions/groups';
+import { GroupCardData } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
+import { useGroups } from '@/hooks/useGroups';
 
 export default function Dashboard() {
-  const [groups, setGroups] = useState<GroupCardData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: groups = [], isLoading: loading, refetch } = useGroups();
   const { toast } = useToast();
 
-  const loadGroups = useCallback(async () => {
-    try {
-      setLoading(true);
-      const userGroups = await getGroupsForUser();
-      setGroups(userGroups);
-    } catch (error) {
-      console.error('Error loading groups:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load groups",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    loadGroups();
-  }, [loadGroups]);
+  const handleGroupUpdate = () => {
+    refetch();
+  };
 
   // Calculate stats
   const totalBalance = groups.reduce((sum, group) => sum + (group.balance || 0), 0);
@@ -89,8 +72,8 @@ export default function Dashboard() {
           Ready to make splitting expenses effortless? Create your first group or join an existing one to get started.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <CreateGroupModal onGroupCreated={loadGroups} />
-          <JoinGroupModal onGroupJoined={loadGroups} />
+          <CreateGroupModal onGroupCreated={handleGroupUpdate} />
+          <JoinGroupModal onGroupJoined={handleGroupUpdate} />
         </div>
       </div>
     );
@@ -106,8 +89,8 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex space-x-3">
-          <JoinGroupModal onGroupJoined={loadGroups} />
-          <CreateGroupModal onGroupCreated={loadGroups} />
+          <JoinGroupModal onGroupJoined={handleGroupUpdate} />
+          <CreateGroupModal onGroupCreated={handleGroupUpdate} />
         </div>
       </div>
 
@@ -274,7 +257,7 @@ export default function Dashboard() {
 //             <p className="text-sm text-muted-foreground">Start with roommates, friends, or travel companions</p>
 //           </Card>
           
-//           <Card className="text-center p-4">
+//           {/* <Card className="text-center p-4">
 //             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
 //               <Sparkles className="h-6 w-6 text-purple-600" />
 //             </div>
@@ -288,7 +271,7 @@ export default function Dashboard() {
 //             </div>
 //             <h3 className="font-semibold mb-2">Settle Up Easily</h3>
 //             <p className="text-sm text-muted-foreground">One-tap settlements with payment integration</p>
-//           </Card>
+//           </Card> */}
 //         </div>
 
 //         <div className="flex flex-col sm:flex-row gap-4 justify-center">

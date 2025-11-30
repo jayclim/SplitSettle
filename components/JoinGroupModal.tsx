@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UserPlus, QrCode, Link, Hash, Camera } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { joinGroup } from '@/api/groups';
+import { joinGroupAction } from '@/lib/actions/mutations';
 import { useToast } from '@/hooks/useToast';
 
 interface JoinGroupModalProps {
@@ -32,7 +32,12 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
     try {
       setLoading(true);
       console.log('Joining group:', data);
-      await joinGroup(data);
+      if (data.code) {
+          await joinGroupAction(data.code);
+      } else {
+          throw new Error("Only join by code is currently supported");
+      }
+      
       toast({
         title: "Joined group!",
         description: "Welcome to your new group.",

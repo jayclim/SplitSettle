@@ -13,25 +13,13 @@ import { ManualExpenseModal } from '@/components/ManualExpenseModal';
 import { GroupSettingsModal } from '@/components/GroupSettingsModal';
 import { ExpenseHistory } from '@/components/ExpenseHistory';
 import { ArrowLeft, Settings, Sparkles, Plus, Send, Smile, Paperclip } from 'lucide-react';
-import { getGroup, getMessages, getBalances, sendMessage, addReaction, type GroupDetail as Group, type Message, type Balance } from '@/lib/actions/groups';
+import { useGroup, useGroupMessages, useGroupBalances, useGroupExpenses } from '@/hooks/useGroupDetails';
+import { sendMessage, addReaction, type GroupDetail as Group, type Message, type Balance } from '@/lib/actions/groups';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SettleUpModal } from '@/components/SettleUpModal';
-
-interface GroupResponse {
-  group: Group;
-}
-
-interface MessagesResponse {
-  messages: Message[];
-  hasMore: boolean;
-}
-
-interface BalancesResponse {
-  balances: Balance[];
-}
 
 interface MessageResponse {
   message: Message;
@@ -41,12 +29,16 @@ export default function GroupDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const [group, setGroup] = useState<Group | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [balances, setBalances] = useState<Balance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [messagesLoading, setMessagesLoading] = useState(true);
-  const [balancesLoading, setBalancesLoading] = useState(true);
+  const { data: groupData, isLoading: groupLoading, refetch: refetchGroup } = useGroup(id);
+  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGroupMessages(id);
+  const { data: balancesData, isLoading: balancesLoading, refetch: refetchBalances } = useGroupBalances(id);
+  const { refetch: refetchExpenses } = useGroupExpenses(id);
+  
+  const group = groupData?.group || null;
+  const messages = messagesData?.messages || [];
+  const balances = balancesData?.balances || [];
+  const loading = groupLoading; // Main loading state
+
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -68,69 +60,6 @@ export default function GroupDetail() {
     getCurrentUser();
   }, []);
 
-  const loadGroup = async () => {
-    if (!id) return;
-    try {
-      setLoading(true);
-      console.log('Loading group:', id);
-      const response = await getGroup(id) as GroupResponse;
-      setGroup(response.group);
-    } catch (error) {
-      console.error('Error loading group:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load group",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async () => {
-    if (!id) return;
-    try {
-      setMessagesLoading(true);
-      console.log('Loading messages for group:', id);
-      const response = await getMessages(id) as MessagesResponse;
-      setMessages(response.messages);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load messages",
-        variant: "destructive",
-      });
-    } finally {
-      setMessagesLoading(false);
-    }
-  };
-
-  const loadBalances = async () => {
-    if (!id) return;
-    try {
-      setBalancesLoading(true);
-      console.log('Loading balances for group:', id);
-      const response = await getBalances(id) as BalancesResponse;
-      setBalances(response.balances);
-    } catch (error) {
-      console.error('Error loading balances:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load balances",
-        variant: "destructive",
-      });
-    } finally {
-      setBalancesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadGroup();
-    loadMessages();
-    loadBalances();
-  }, [id]);
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || !id) return;
@@ -143,7 +72,8 @@ export default function GroupDetail() {
         replyToId: replyingTo?._id
       }) as MessageResponse;
       
-      setMessages(prev => [...prev, response.message]);
+      // setMessages(prev => [...prev, response.message]);
+      refetchMessages(); // Refresh messages to ensure consistency
       setMessageText('');
       setReplyingTo(null);
     } catch (error) {
@@ -253,22 +183,21 @@ export default function GroupDetail() {
               </div>
             )}
           </div>
-          <GroupSettingsModal group={group} onGroupUpdated={loadGroup} />
+          <GroupSettingsModal group={group} onGroupUpdated={() => refetchGroup()} />
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="activity" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
-          <TabsTrigger value="balances">Balances</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
+      <Tabs defaultValue="expenses" className="w-full">
+        <TabsList className="flex w-full">
+          {/* <TabsTrigger value="activity">Activity</TabsTrigger> */}
+          <TabsTrigger value="expenses" className="flex-1">Expenses</TabsTrigger>
+          <TabsTrigger value="balances" className="flex-1">Balances</TabsTrigger>
+          <TabsTrigger value="members" className="flex-1">Members</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="activity" className="space-y-4">
+        {/* <TabsContent value="activity" className="space-y-4">
           <div className="bg-white rounded-lg border min-h-[500px] flex flex-col">
-            {/* Messages */}
             <div className="flex-1 p-4 overflow-y-auto max-h-96">
               {messagesLoading ? (
                 <div className="space-y-4">
@@ -297,7 +226,6 @@ export default function GroupDetail() {
               )}
             </div>
 
-            {/* Reply indicator */}
             {replyingTo && (
               <div className="px-4 py-2 bg-gray-50 border-t border-b">
                 <div className="flex items-center justify-between">
@@ -317,7 +245,6 @@ export default function GroupDetail() {
               </div>
             )}
 
-            {/* Input */}
             <div className="p-4 border-t">
               <div className="flex space-x-2 mb-3">
                 <Button
@@ -356,10 +283,10 @@ export default function GroupDetail() {
               </form>
             </div>
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="expenses" className="space-y-4">
-          <ExpenseHistory groupId={group._id} />
+          <ExpenseHistory groupId={group._id} onAddExpense={() => setManualModalOpen(true)} />
         </TabsContent>
 
         <TabsContent value="balances" className="space-y-4">
@@ -416,18 +343,19 @@ export default function GroupDetail() {
                             const currentUserBalance = balances.find(b => b.userId === currentUserId);
                             const owesThisPerson = currentUserBalance?.owesTo.some(debt => debt.userId === balance.userId);
                             
-                            return owesThisPerson && (
-                              <Button 
-                                size="sm" 
-                                className="mt-2 ml-2"
-                                onClick={() => {
-                                  setSelectedBalance(balance);
-                                  setSettleUpModalOpen(true);
-                                }}
-                              >
-                                Settle Up
-                              </Button>
-                            );
+                              return owesThisPerson && (
+                                // <Button 
+                                //   size="sm" 
+                                //   className="mt-2 ml-2"
+                                //   onClick={() => {
+                                //     setSelectedBalance(balance);
+                                //     setSettleUpModalOpen(true);
+                                //   }}
+                                // >
+                                //   Settle Up
+                                // </Button>
+                                null
+                              );
                           })()}
                         </div>
                       </div>
@@ -469,14 +397,15 @@ export default function GroupDetail() {
       </Tabs>
 
       {/* Modals */}
+      {/* Modals */}
       <AIExpenseModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
         groupId={group._id}
         members={group.members}
         onExpenseCreated={() => {
-          loadMessages();
-          loadBalances();
+          refetchMessages();
+          refetchBalances();
         }}
       />
 
@@ -485,13 +414,13 @@ export default function GroupDetail() {
         onClose={() => setManualModalOpen(false)}
         groupId={group._id}
         members={group.members}
+        currentUserId={currentUserId}
         onExpenseCreated={() => {
-          loadMessages();
-          loadBalances();
+          refetchMessages();
+          refetchBalances();
+          refetchExpenses();
         }}
-      />
-
-      {selectedBalance && (
+      />{selectedBalance && (
         <SettleUpModal
           open={settleUpModalOpen}
           onClose={() => {
@@ -506,8 +435,9 @@ export default function GroupDetail() {
           }}
           groupId={group._id}
           onSettlementCreated={() => {
-            loadBalances();
-            loadMessages();
+            refetchBalances();
+            refetchMessages();
+            refetchExpenses();
           }}
         />
       )}
