@@ -33,7 +33,7 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4">
           <NotificationsModal />
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
           </Button>

@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="fixed bottom-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
       <div className="container flex h-14 items-center justify-between">
         <p className="mx-6 text-sm text-muted-foreground">
-          Built by <a href="" target="_blank" rel="noopener noreferrer">Pythagora</a>
+          Built by <a href="https://jaydenclim.com" target="_blank" rel="noopener noreferrer" style={{ color: '#B31B1B' }}>Jayden Lim</a>
         </p>
       </div>
     </footer>

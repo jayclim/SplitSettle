@@ -111,7 +111,7 @@ export default function Dashboard() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <CreateGroupModal onGroupCreated={handleGroupUpdate} />
-          <JoinGroupModal onGroupJoined={handleGroupUpdate} />
+          {/* <JoinGroupModal onGroupJoined={handleGroupUpdate} /> */}
         </div>
       </div>
     );
@@ -165,7 +165,7 @@ export default function Dashboard() {
               </DialogContent>
             </Dialog>
           )}
-          <JoinGroupModal onGroupJoined={handleGroupUpdate} />
+          {/* <JoinGroupModal onGroupJoined={handleGroupUpdate} /> */}
           <CreateGroupModal onGroupCreated={handleGroupUpdate} />
         </div>
       </div>
