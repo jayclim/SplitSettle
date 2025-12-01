@@ -18,6 +18,7 @@ import { relations, SQL, Placeholder } from 'drizzle-orm';
 // =================================
 
 export const roleEnum = pgEnum('role', ['admin', 'member']);
+export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'declined']);
 
 // =================================
 //          TABLES
@@ -30,6 +31,7 @@ export const users = pgTable('users', {
   emailVerified: timestamp('emailVerified', { mode: 'date', withTimezone: true }),
   image: text('image'),
   avatarUrl: text('avatar_url'),
+  isGhost: boolean('is_ghost').default(false).notNull(),
 });
 
 export const accounts = pgTable(
@@ -160,7 +162,21 @@ export const messages = pgTable('messages', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
-  metadata: text('metadata').$type<AnyPlaceholder>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const invitations = pgTable('invitations', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  invitedById: uuid('invited_by_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  ghostUserId: uuid('ghost_user_id')
+    .references(() => users.id, { onDelete: 'set null' }),
+  status: invitationStatusEnum('status').default('pending').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -226,6 +242,21 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  group: one(groups, {
+    fields: [invitations.groupId],
+    references: [groups.id],
+  }),
+  invitedBy: one(users, {
+    fields: [invitations.invitedById],
+    references: [users.id],
+  }),
+  ghostUser: one(users, {
+    fields: [invitations.ghostUserId],
+    references: [users.id],
+  }),
+}));
+
 // =================================
 //          TYPE EXPORTS
 // =================================
@@ -236,3 +267,4 @@ export type NewGroup = typeof groups.$inferInsert;
 export type NewExpense = typeof expenses.$inferInsert;
 export type NewExpenseSplit = typeof expenseSplits.$inferInsert;
 export type NewMessage = typeof messages.$inferInsert;
+export type NewInvitation = typeof invitations.$inferInsert;

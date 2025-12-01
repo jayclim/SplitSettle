@@ -13,8 +13,8 @@ export function Header() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/auth/login");
-    router.refresh(); // Ensures the server components are re-rendered
+    // Force a hard reload to clear client-side cache
+    window.location.href = "/auth/login";
   };
 
   return (

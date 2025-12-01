@@ -55,13 +55,14 @@ async function seedTestData() {
             email: data.user.email!,
             name: user.name,
             avatarUrl: user.avatar_url,
+            isGhost: false,
           }).onConflictDoNothing();
         }
       } else {
-         console.log(`ℹ️  User ${user.email} already exists.`);
+        console.log(`ℹ️  User ${user.email} already exists.`);
       }
     }
-    
+
     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for db replication
 
     // Get all user objects from the database
@@ -91,6 +92,19 @@ async function seedTestData() {
       { userId: bob.id, groupId: weekendTrip.id, role: 'member' },
       { userId: charlie.id, groupId: weekendTrip.id, role: 'member' },
     ]);
+
+    // Add a ghost user to Weekend Trip
+    const [ghostUser] = await db.insert(users).values({
+      name: 'Ghost Rider',
+      email: `ghost_${Date.now()}@placeholder.com`,
+      isGhost: true,
+    }).returning();
+
+    await db.insert(usersToGroups).values({
+      userId: ghostUser.id,
+      groupId: weekendTrip.id,
+      role: 'member',
+    });
 
     // Group 2: Road Trip (All 6 users) - Unsettled with uneven splits
     const [roadTrip] = await db.insert(groups).values({ name: 'Cross-Country Road Trip', description: 'From coast to coast!' }).returning();
@@ -136,7 +150,7 @@ async function seedTestData() {
     // --- Road Trip Expenses (Unsettled, Uneven Splits) ---
     const [rt_e1] = await db.insert(expenses).values({ groupId: roadTrip.id, description: 'Gas', amount: '80.00', paidById: dave.id, date: new Date(), category: 'transportation' }).returning();
     await db.insert(expenseSplits).values([ // Split evenly
-      ...[alice, bob, charlie, dave, eve, frank].map(u => ({ expenseId: rt_e1.id, userId: u.id, amount: (80/6).toFixed(2) }))
+      ...[alice, bob, charlie, dave, eve, frank].map(u => ({ expenseId: rt_e1.id, userId: u.id, amount: (80 / 6).toFixed(2) }))
     ]);
     const [rt_e2] = await db.insert(expenses).values({ groupId: roadTrip.id, description: 'Snacks and Drinks', amount: '45.50', paidById: eve.id, date: new Date(), category: 'food' }).returning();
     await db.insert(expenseSplits).values([ // Uneven split
@@ -168,7 +182,7 @@ async function seedTestData() {
     ]);
 
     console.log('🎉 Test data seeding completed!');
-    
+
   } catch (error) {
     console.error('❌ Error seeding test data:', error);
     process.exit(1);

@@ -20,6 +20,7 @@ export interface GroupMember {
   avatar?: string;
   role: 'admin' | 'member';
   joinedAt: string;
+  isGhost?: boolean;
 }
 
 export interface CreateGroupData {

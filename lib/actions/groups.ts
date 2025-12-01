@@ -3,8 +3,9 @@
 import { db } from '@/lib/db';
 import { usersToGroups, expenses, users, groups, messages, expenseSplits } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
-import { eq, inArray, desc, and } from 'drizzle-orm';
+import { eq, inArray, desc, and, sql } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import { invitations } from '@/lib/db/schema';
 
 export type GroupMember = {
   id: string;
@@ -30,6 +31,7 @@ export type GroupDetailMember = {
   avatar?: string;
   role: 'admin' | 'member';
   joinedAt: string;
+  isGhost?: boolean;
 };
 
 export type GroupDetail = {
@@ -212,6 +214,7 @@ export async function getGroup(groupId: string): Promise<{ group: GroupDetail }>
           name: true,
           email: true,
           avatarUrl: true,
+          isGhost: true,
         },
       },
     },
@@ -224,6 +227,7 @@ export async function getGroup(groupId: string): Promise<{ group: GroupDetail }>
     avatar: membership.user.avatarUrl || undefined,
     role: membership.role,
     joinedAt: new Date().toISOString(), // Mock for now
+    isGhost: membership.user.isGhost || false,
   }));
 
   // Calculate user's balance in this group
@@ -392,6 +396,7 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
           name: true,
           email: true,
           avatarUrl: true,
+          isGhost: true,
         },
       },
     },
@@ -650,4 +655,222 @@ export async function getExpenses(groupId: string): Promise<{ expenses: Expense[
   }));
 
   return { expenses: formattedExpenses };
+}
+
+export async function createGroup(name: string, description?: string, coverImageUrl?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // Create the group
+  const [newGroup] = await db.insert(groups).values({
+    name,
+    description,
+    coverImageUrl,
+  }).returning();
+
+  // Add the creator as an admin
+  await db.insert(usersToGroups).values({
+    userId: user.id,
+    groupId: newGroup.id,
+    role: 'admin',
+  });
+
+  return newGroup;
+}
+
+export async function createGhostMember(groupId: string, name: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const groupIdNum = parseInt(groupId);
+  if (isNaN(groupIdNum)) {
+    throw new Error('Invalid group ID');
+  }
+
+  // Verify requester is a member of the group
+  const membership = await db.query.usersToGroups.findFirst({
+    where: and(
+      eq(usersToGroups.userId, user.id),
+      eq(usersToGroups.groupId, groupIdNum)
+    ),
+  });
+
+  if (!membership) {
+    throw new Error('Access denied');
+  }
+
+  // Create ghost user
+  const [ghostUser] = await db.insert(users).values({
+    name,
+    email: `ghost_${Date.now()}_${Math.random().toString(36).substring(7)}@placeholder.com`, // Unique placeholder email
+    isGhost: true,
+  }).returning();
+
+  // Add ghost user to group
+  await db.insert(usersToGroups).values({
+    userId: ghostUser.id,
+    groupId: groupIdNum,
+    role: 'member',
+  });
+
+  return ghostUser;
+}
+
+export async function inviteMember(groupId: string, email: string, ghostUserId?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const groupIdNum = parseInt(groupId);
+  if (isNaN(groupIdNum)) {
+    throw new Error('Invalid group ID');
+  }
+
+  // Verify requester is a member
+  const membership = await db.query.usersToGroups.findFirst({
+    where: and(
+      eq(usersToGroups.userId, user.id),
+      eq(usersToGroups.groupId, groupIdNum)
+    ),
+  });
+
+  if (!membership) {
+    throw new Error('Access denied');
+  }
+
+  // Check if user is already in the group
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (existingUser) {
+    const existingMembership = await db.query.usersToGroups.findFirst({
+      where: and(
+        eq(usersToGroups.userId, existingUser.id),
+        eq(usersToGroups.groupId, groupIdNum)
+      ),
+    });
+
+    if (existingMembership) {
+      throw new Error('User is already a member of this group');
+    }
+  }
+
+  // Create invitation
+  await db.insert(invitations).values({
+    groupId: groupIdNum,
+    email,
+    invitedById: user.id,
+    ghostUserId: ghostUserId, // Link to ghost user if provided
+    status: 'pending',
+  });
+}
+
+export async function getPendingInvitations() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  if (!user.email) return [];
+
+  const pendingInvites = await db.query.invitations.findMany({
+    where: and(
+      eq(invitations.email, user.email),
+      eq(invitations.status, 'pending')
+    ),
+    with: {
+      group: true,
+      invitedBy: {
+        columns: {
+          name: true,
+          avatarUrl: true,
+        },
+      },
+    },
+  });
+
+  return pendingInvites;
+}
+
+export async function respondToInvitation(invitationId: number, accept: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const invitation = await db.query.invitations.findFirst({
+    where: eq(invitations.id, invitationId),
+  });
+
+  if (!invitation) {
+    throw new Error('Invitation not found');
+  }
+
+  if (invitation.email !== user.email) {
+    throw new Error('This invitation is not for you');
+  }
+
+  if (accept) {
+    // If there is a ghost user linked, merge them
+    if (invitation.ghostUserId) {
+      // 1. Update expenses paid by ghost user
+      await db.update(expenses)
+        .set({ paidById: user.id })
+        .where(eq(expenses.paidById, invitation.ghostUserId));
+
+      // 2. Update expense splits assigned to ghost user
+      await db.update(expenseSplits)
+        .set({ userId: user.id })
+        .where(eq(expenseSplits.userId, invitation.ghostUserId));
+
+      // 3. Remove ghost user from group (usersToGroups)
+      await db.delete(usersToGroups)
+        .where(and(
+          eq(usersToGroups.userId, invitation.ghostUserId),
+          eq(usersToGroups.groupId, invitation.groupId)
+        ));
+
+      // 4. Delete the ghost user record (optional, but cleaner)
+      // Note: This might fail if there are other constraints, but usually safe if we updated references
+      try {
+        await db.delete(users).where(eq(users.id, invitation.ghostUserId));
+      } catch (e) {
+        console.warn('Could not delete ghost user record:', e);
+      }
+    }
+
+    // Add user to group (if not already added via merge logic - wait, merge logic removed ghost membership)
+    // We always need to add the real user to the group
+    await db.insert(usersToGroups).values({
+      userId: user.id,
+      groupId: invitation.groupId,
+      role: 'member',
+    }).onConflictDoNothing();
+
+    // Update invitation status
+    await db.update(invitations)
+      .set({ status: 'accepted' })
+      .where(eq(invitations.id, invitationId));
+
+  } else {
+    await db.update(invitations)
+      .set({ status: 'declined' })
+      .where(eq(invitations.id, invitationId));
+  }
 }

@@ -9,8 +9,9 @@ import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Plus, Users, MapPin, Home } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createGroupAction, CreateGroupData } from '@/lib/actions/mutations';
+import { createGroup } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
+import { useRouter } from 'next/navigation';
 
 interface CreateGroupModalProps {
   onGroupCreated: () => void;
@@ -21,8 +22,10 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+  const [createdGroup, setCreatedGroup] = useState<{ id: number; name: string } | null>(null);
   
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateGroupData>();
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<{ name: string; description: string }>();
 
   const templates = [
     {
@@ -62,18 +65,17 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
     }
   };
 
-  const onSubmit = async (data: CreateGroupData) => {
+  const onSubmit = async (data: { name: string; description: string }) => {
     try {
       setLoading(true);
       console.log('Creating group:', data);
-      await createGroupAction(data);
+      const newGroup = await createGroup(data.name, data.description);
+      setCreatedGroup(newGroup);
+      setStep(3); // Move to confirmation step
       toast({
         title: "Group created!",
         description: "Your new group is ready to use.",
       });
-      setOpen(false);
-      reset();
-      setStep(1);
       onGroupCreated();
     } catch (error) {
       console.error('Error creating group:', error);
@@ -90,6 +92,7 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
   const handleClose = () => {
     setOpen(false);
     setStep(1);
+    setCreatedGroup(null);
     reset();
   };
 
@@ -104,7 +107,7 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? 'Choose a Template' : 'Create Your Group'}
+            {step === 1 ? 'Choose a Template' : step === 2 ? 'Create Your Group' : 'Group Created!'}
           </DialogTitle>
         </DialogHeader>
 
@@ -137,7 +140,7 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
               ))}
             </div>
           </div>
-        ) : (
+        ) : step === 2 ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="groupName">Group Name</Label>
@@ -179,6 +182,29 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
               </Button>
             </div>
           </form>
+        ) : (
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+              <Users className="h-8 w-8" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium">"{createdGroup?.name}" is ready!</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                You can now add members to your group. Go to the "Members" tab in the group settings to add friends or create "ghost" members for quick splitting.
+              </p>
+            </div>
+            <Button
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              onClick={() => {
+                handleClose();
+                if (createdGroup) {
+                  router.push(`/groups/${createdGroup.id}`);
+                }
+              }}
+            >
+              Go to Group
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>

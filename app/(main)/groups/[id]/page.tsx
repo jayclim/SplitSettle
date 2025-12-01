@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,6 +45,7 @@ export default function GroupDetail() {
   const [settleUpModalOpen, setSettleUpModalOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<Balance | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("expenses");
   const { toast } = useToast();
 
   const getCurrentUser = async () => {
@@ -113,11 +113,11 @@ export default function GroupDetail() {
     const abs = Math.abs(amount);
     const formatted = abs.toFixed(2);
     if (amount > 0) {
-      return { text: `+$${formatted}`, color: 'text-green-600', bg: 'bg-green-50' };
+      return { text: `+$${formatted}`, color: 'text-green-600', bg: 'bg-green-50', label: 'Gets back' };
     } else if (amount < 0) {
-      return { text: `-$${formatted}`, color: 'text-red-600', bg: 'bg-red-50' };
+      return { text: `-$${formatted}`, color: 'text-red-600', bg: 'bg-red-50', label: 'Owes' };
     }
-    return { text: '$0.00', color: 'text-gray-600', bg: 'bg-gray-50' };
+    return { text: '$0.00', color: 'text-gray-600', bg: 'bg-gray-50', label: '' };
   };
 
   if (loading) {
@@ -188,213 +188,142 @@ export default function GroupDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="expenses" className="w-full">
-        <TabsList className="flex w-full">
-          {/* <TabsTrigger value="activity">Activity</TabsTrigger> */}
-          <TabsTrigger value="expenses" className="flex-1">Expenses</TabsTrigger>
-          <TabsTrigger value="balances" className="flex-1">Balances</TabsTrigger>
-          <TabsTrigger value="members" className="flex-1">Members</TabsTrigger>
-        </TabsList>
+      <div className="w-full space-y-4">
+        <div className="flex w-full bg-muted p-1 rounded-md">
+          {['expenses', 'balances', 'members'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`
+                flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
+                ${activeTab === tab ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted-foreground/10'}
+              `}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
 
-        {/* <TabsContent value="activity" className="space-y-4">
-          <div className="bg-white rounded-lg border min-h-[500px] flex flex-col">
-            <div className="flex-1 p-4 overflow-y-auto max-h-96">
-              {messagesLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex space-x-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-16 w-full" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {messages.map((message) => (
-                    <MessageBubble
-                      key={message._id}
-                      message={message}
-                      isOwn={message.senderId === currentUserId}
-                      onReply={setReplyingTo}
-                      onReact={handleReaction}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {replyingTo && (
-              <div className="px-4 py-2 bg-gray-50 border-t border-b">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Replying to </span>
-                    <span className="font-medium">{replyingTo.senderName}</span>
-                    <p className="text-muted-foreground truncate">{replyingTo.content}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReplyingTo(null)}
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="p-4 border-t">
-              <div className="flex space-x-2 mb-3">
-                <Button
-                  onClick={() => setAiModalOpen(true)}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  AI Expense
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setManualModalOpen(true)}
-                  className="border-green-200 text-green-700 hover:bg-green-50"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Manual
-                </Button>
-              </div>
-              
-              <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <Input
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1"
-                />
-                <Button variant="ghost" size="icon" type="button">
-                  <Smile className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" type="button">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button type="submit" disabled={!messageText.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
+        {activeTab === 'expenses' && (
+          <div className="space-y-4">
+            <ExpenseHistory groupId={group._id} onAddExpense={() => setManualModalOpen(true)} />
           </div>
-        </TabsContent> */}
+        )}
 
-        <TabsContent value="expenses" className="space-y-4">
-          <ExpenseHistory groupId={group._id} onAddExpense={() => setManualModalOpen(true)} />
-        </TabsContent>
-
-        <TabsContent value="balances" className="space-y-4">
-          {balancesLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20" />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {balances.map((balance) => {
-                const balanceInfo = formatBalance(balance.amount);
-                return (
-                  <Card key={balance._id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Avatar>
-                            <AvatarImage src={balance.userAvatar} />
-                            <AvatarFallback>
-                              {getInitials(balance.userName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{balance.userName}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {balance.amount >= 0 ? 'Gets back' : 'Owes'}
-                            </p>
-                            {/* Show specific debt details */}
-                            {balance.owesTo.length > 0 && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Owes: {balance.owesTo.map(debt => 
-                                  `$${debt.amount.toFixed(2)} to ${debt.userName}`
-                                ).join(', ')}
-                              </div>
-                            )}
-                            {balance.owedBy.length > 0 && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Owed: {balance.owedBy.map(debt => 
-                                  `$${debt.amount.toFixed(2)} by ${debt.userName}`
-                                ).join(', ')}
-                              </div>
-                            )}
+        {activeTab === 'balances' && (
+          <div className="space-y-4">
+            {balancesLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-20" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {balances.map((balance) => {
+                  const balanceInfo = formatBalance(balance.amount);
+                  return (
+                    <Card key={balance._id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Avatar>
+                              <AvatarImage src={balance.userAvatar} />
+                              <AvatarFallback>
+                                {getInitials(balance.userName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{balance.userName}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {balanceInfo.label}
+                              </p>
+                              {/* Show specific debt details */}
+                              {balance.owesTo.length > 0 && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Owes: {balance.owesTo.map(debt => 
+                                    `$${debt.amount.toFixed(2)} to ${debt.userName}`
+                                  ).join(', ')}
+                                </div>
+                              )}
+                              {balance.owedBy.length > 0 && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Owed: {balance.owedBy.map(debt => 
+                                    `$${debt.amount.toFixed(2)} by ${debt.userName}`
+                                  ).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="secondary" className={`${balanceInfo.bg} ${balanceInfo.color} border-0`}>
+                              {balanceInfo.text}
+                            </Badge>
+                            {/* Show settle up button if current user owes money to this person */}
+                            {(() => {
+                              // Find the current user's balance to check who they owe money to
+                              const currentUserBalance = balances.find(b => b.userId === currentUserId);
+                              const owesThisPerson = currentUserBalance?.owesTo.some(debt => debt.userId === balance.userId);
+                              
+                                return owesThisPerson && (
+                                  // <Button 
+                                  //   size="sm" 
+                                  //   className="mt-2 ml-2"
+                                  //   onClick={() => {
+                                  //     setSelectedBalance(balance);
+                                  //     setSettleUpModalOpen(true);
+                                  //   }}
+                                  // >
+                                  //   Settle Up
+                                  // </Button>
+                                  null
+                                );
+                            })()}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant="secondary" className={`${balanceInfo.bg} ${balanceInfo.color} border-0`}>
-                            {balanceInfo.text}
-                          </Badge>
-                          {/* Show settle up button if current user owes money to this person */}
-                          {(() => {
-                            // Find the current user's balance to check who they owe money to
-                            const currentUserBalance = balances.find(b => b.userId === currentUserId);
-                            const owesThisPerson = currentUserBalance?.owesTo.some(debt => debt.userId === balance.userId);
-                            
-                              return owesThisPerson && (
-                                // <Button 
-                                //   size="sm" 
-                                //   className="mt-2 ml-2"
-                                //   onClick={() => {
-                                //     setSelectedBalance(balance);
-                                //     setSettleUpModalOpen(true);
-                                //   }}
-                                // >
-                                //   Settle Up
-                                // </Button>
-                                null
-                              );
-                          })()}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'members' && (
+          <div className="space-y-4">
+            <div className="space-y-4">
+              {group.members.map((member) => (
+                <Card key={member._id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar>
+                          <AvatarImage src={member.avatar} />
+                          <AvatarFallback>
+                            {getInitials(member.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          {member.isGhost ? (
+                            <p className="text-sm text-muted-foreground italic">Ghost User</p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="members" className="space-y-4">
-          <div className="space-y-4">
-            {group.members.map((member) => (
-              <Card key={member._id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src={member.avatar} />
-                        <AvatarFallback>
-                          {getInitials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">{member.email}</p>
-                      </div>
+                      <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                        {member.role}
+                      </Badge>
                     </div>
-                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                      {member.role}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       {/* Modals */}
       {/* Modals */}
