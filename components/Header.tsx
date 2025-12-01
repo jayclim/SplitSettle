@@ -32,7 +32,7 @@ export function Header() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <NotificationsModal />
+          {/* <NotificationsModal /> */}
           {/* <ThemeToggle /> */}
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
