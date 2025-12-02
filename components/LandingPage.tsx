@@ -98,7 +98,7 @@ export function LandingPage() {
             <Button 
               size="lg" 
               onClick={() => router.push('/sign-up')}
-              className="rounded-full h-14 px-8 text-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-90 transition-opacity"
+              className="rounded-full h-14 px-8 text-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-90 transition-opacity text-white"
             >
               Start Splitting Free
               <ArrowRight className="ml-2 h-5 w-5" />

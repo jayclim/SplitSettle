@@ -109,7 +109,7 @@ export default function Dashboard() {
         <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <Sparkles className="h-12 w-12 text-white" />
         </div>
-        <h2 className="text-2xl font-bold mb-4">Welcome to SplitSettle!</h2>
+        <h2 className="text-2xl font-bold mb-4">Welcome to Divvy!</h2>
               <p className="text-muted-foreground mb-4">
                 You haven&apos;t joined any groups yet. Create a new group or join an existing one to start splitting expenses!
               </p>
