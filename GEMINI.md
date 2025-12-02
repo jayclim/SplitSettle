@@ -1,7 +1,7 @@
-# Gemini CLI Context for SplitSettle
+# Gemini CLI Context for Divvy
 
 ## Quick Summary
-- **Project**: SplitSettle (Expense Splitting App)
+- **Project**: Divvy (Expense Splitting App)
 - **Stack**: Next.js 15, TypeScript, Tailwind, Drizzle ORM, Postgres.
 - **Docs**: See `AGENTS.md` for detailed architecture.
 

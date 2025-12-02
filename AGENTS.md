@@ -1,4 +1,4 @@
-# Project "SplitSettle" Documentation for AI Agents
+# Project "Divvy" Documentation for AI Agents
 
 ## Project Overview
 This is a Next.js 15 application for expense splitting (similar to Splitwise). It uses the App Router, TypeScript, Tailwind CSS, and Drizzle ORM with Postgres.

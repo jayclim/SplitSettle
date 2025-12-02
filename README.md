@@ -1,7 +1,7 @@
 
-## 🚀 SplitSettle
+## 🚀 Divvy
 
-SplitSettle is a modern expense-splitting and group-settlement web application built with Next.js. It helps groups track shared expenses, calculate balances, and settle up fairly and transparently.
+Divvy is a modern expense-splitting and group-settlement web application built with Next.js. It helps groups track shared expenses, calculate balances, and settle up fairly and transparently.
 
 > Status: **IN PROGRESS** — actively developed. This repo is a demo for evaluation and not yet production-ready.
 
@@ -10,7 +10,7 @@ SplitSettle is a modern expense-splitting and group-settlement web application b
 
 ## 🔎 Project snapshot
 
-SplitSettle provides:
+Divvy provides:
 
 - Group management (create/join groups)
 - Expense creation with multiple participants and split logic

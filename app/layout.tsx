@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import QueryProvider from "@/components/providers/QueryProvider";
 
 export const metadata: Metadata = {
-  title: "SplitSettle",
+  title: "Divvy",
   description: "Effortless expense splitting for groups",
 };
 

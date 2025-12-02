@@ -148,7 +148,7 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
                           message: 'Please enter a valid URL'
                         }
                       })}
-                      placeholder="https://splitsettle.com/join/..."
+                      placeholder="https://divvy.com/join/..."
                     />
                     {errors.link && (
                       <p className="text-sm text-red-600">{errors.link.message}</p>

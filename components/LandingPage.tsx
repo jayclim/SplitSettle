@@ -63,7 +63,7 @@ export function LandingPage() {
             <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white">
               <Zap className="h-6 w-6 fill-current" />
             </div>
-            <span className="text-xl font-bold tracking-tight">SplitSettle</span>
+            <span className="text-xl font-bold tracking-tight">Divvy</span>
           </div>
           
           {/* <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -250,12 +250,12 @@ export function LandingPage() {
             <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[400px]">
               <div className="relative z-10">
                 <h3 className="text-2xl font-bold mb-4">What Our Users Say</h3>
-                <p className="text-slate-500 mb-8">Hear from people who love SplitSettle.</p>
+                <p className="text-slate-500 mb-8">Hear from people who love Divvy.</p>
               </div>
               <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
                 <div className="space-y-4">
                   <div className="p-4 bg-white rounded-xl shadow-sm border">
-                    <p className="text-gray-600 mb-4">&quot;SplitSettle has completely changed how we manage our apartment expenses. No more awkward conversations about money!&quot;</p>
+                    <p className="text-gray-600 mb-4">&quot;Divvy has completely changed how we manage our apartment expenses. No more awkward conversations about money!&quot;</p>
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
                       <div>
@@ -314,7 +314,7 @@ export function LandingPage() {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
                   <Zap className="h-5 w-5 fill-current" />
                 </div>
-                <span className="text-lg font-bold">SplitSettle</span>
+                <span className="text-lg font-bold">Divvy</span>
               </div>
               <p className="text-slate-500 text-sm leading-relaxed">
                 The modern way to track expenses, split bills, and settle debts with friends.
@@ -361,7 +361,7 @@ export function LandingPage() {
 
           <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500">
-              © 2025 SplitSettle. All rights reserved. | designed and developed by{' '}
+              © 2025 Divvy. All rights reserved. | designed and developed by{' '}
               <a href="https://jaydenclim.com" target="_blank" rel="noopener noreferrer" className="text-black hover:underline">
                 Jayden Lim
               </a>
