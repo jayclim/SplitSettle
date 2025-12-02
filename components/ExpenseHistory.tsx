@@ -31,7 +31,7 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
       'Entertainment': 'bg-purple-100 text-purple-700',
       'Shopping': 'bg-pink-100 text-pink-700',
       'Utilities': 'bg-green-100 text-green-700',
-      'Other': 'bg-gray-100 text-gray-700'
+      'Other': 'bg-slate-100 text-slate-700'
     };
     return colors[category as keyof typeof colors] || colors.Other;
   };
@@ -97,7 +97,7 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
         {filteredExpenses.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <Receipt className="h-12 w-12 text-slate-400 mx-auto mb-4" />
               <p className="text-muted-foreground">No expenses found</p>
             </CardContent>
           </Card>

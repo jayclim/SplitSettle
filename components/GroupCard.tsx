@@ -27,7 +27,7 @@ export function GroupCard({ group }: GroupCardProps) {
     } else if (amount < 0) {
       return { text: `-$${formatted}`, color: 'text-red-600', bg: 'bg-red-50' };
     }
-    return { text: '$0.00', color: 'text-gray-600', bg: 'bg-gray-50' };
+    return { text: '$0.00', color: 'text-slate-600', bg: 'bg-slate-50' };
   };
 
   const balance = formatBalance(group.balance);
@@ -69,8 +69,8 @@ export function GroupCard({ group }: GroupCardProps) {
               </Avatar>
             ))}
             {group.members.length > 3 && (
-              <div className="h-6 w-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                <span className="text-xs text-gray-600">+{group.members.length - 3}</span>
+              <div className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center">
+                <span className="text-xs text-slate-600">+{group.members.length - 3}</span>
               </div>
             )}
           </div>

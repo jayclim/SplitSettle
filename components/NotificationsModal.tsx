@@ -131,7 +131,7 @@ export function NotificationsModal() {
       case 'group_invite':
         return 'bg-orange-100 text-orange-600';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-slate-100 text-slate-600';
     }
   };
 
@@ -217,7 +217,7 @@ export function NotificationsModal() {
           ) : notifications.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Bell className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-muted-foreground">No notifications</p>
               </CardContent>
             </Card>
@@ -226,7 +226,7 @@ export function NotificationsModal() {
               <Card 
                 key={notification._id} 
                 className={`cursor-pointer transition-colors ${
-                  !notification.read ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                  !notification.read ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'
                 }`}
                 onClick={() => markAsRead(notification._id)}
               >

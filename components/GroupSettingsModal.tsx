@@ -182,7 +182,7 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
                   <CardDescription>Add or remove group members</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                  <div className="space-y-4 p-4 border rounded-lg bg-slate-50">
                     <h4 className="font-medium flex items-center">
                       <Users className="h-4 w-4 mr-2" />
                       Add New Member
@@ -354,7 +354,7 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
                   <CardDescription>Irreversible actions</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-gray-50">
+                  <div className="p-4 border rounded-lg bg-slate-50">
                     <h4 className="font-medium mb-4 flex items-center">
                       <Crown className="h-4 w-4 mr-2" />
                       Manage Roles

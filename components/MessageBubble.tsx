@@ -71,7 +71,7 @@ export function MessageBubble({ message, isOwn, onReply, onReact }: MessageBubbl
         
         <div className="flex flex-col space-y-1">
           {message.replyTo && (
-            <div className="text-xs text-muted-foreground bg-gray-100 rounded p-2 border-l-2 border-blue-500">
+            <div className="text-xs text-muted-foreground bg-slate-100 rounded p-2 border-l-2 border-blue-500">
               <p className="font-medium">{message.replyTo.senderName}</p>
               <p className="truncate">{message.replyTo.content}</p>
             </div>
@@ -97,7 +97,7 @@ export function MessageBubble({ message, isOwn, onReply, onReact }: MessageBubbl
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="text-xs px-2 py-0 h-6 cursor-pointer hover:bg-gray-200"
+                    className="text-xs px-2 py-0 h-6 cursor-pointer hover:bg-slate-200"
                     onClick={() => handleReaction(reaction.emoji)}
                   >
                     {reaction.emoji} {reaction.users.length}
@@ -111,7 +111,7 @@ export function MessageBubble({ message, isOwn, onReply, onReact }: MessageBubbl
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 hover:bg-gray-200"
+                className="h-6 w-6 p-0 hover:bg-slate-200"
                 onClick={() => setShowReactions(!showReactions)}
               >
                 <Smile className="h-3 w-3" />
@@ -119,7 +119,7 @@ export function MessageBubble({ message, isOwn, onReply, onReact }: MessageBubbl
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 hover:bg-gray-200"
+                className="h-6 w-6 p-0 hover:bg-slate-200"
                 onClick={() => onReply(message)}
               >
                 <Reply className="h-3 w-3" />
@@ -134,7 +134,7 @@ export function MessageBubble({ message, isOwn, onReply, onReact }: MessageBubbl
                     key={emoji}
                     size="sm"
                     variant="ghost"
-                    className="h-8 w-8 p-0 hover:bg-gray-100"
+                    className="h-8 w-8 p-0 hover:bg-slate-100"
                     onClick={() => handleReaction(emoji)}
                   >
                     {emoji}

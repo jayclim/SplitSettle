@@ -180,8 +180,8 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <div className="w-48 h-48 bg-gray-100 rounded-lg mx-auto flex items-center justify-center mb-4">
-                  <Camera className="h-12 w-12 text-gray-400" />
+                <div className="w-48 h-48 bg-slate-100 rounded-lg mx-auto flex items-center justify-center mb-4">
+                  <Camera className="h-12 w-12 text-slate-400" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   QR code scanning will be available soon

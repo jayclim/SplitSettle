@@ -218,12 +218,12 @@ export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseC
               </div>
               <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
                 {members.map((member) => (
-                  <label key={member._id} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                  <label key={member._id} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-50 rounded">
                     <input
                       type="checkbox"
                       {...register('splitBetween')}
                       value={member._id}
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      className="rounded border-slate-300 text-green-600 focus:ring-green-500"
                     />
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={member.avatar} />
@@ -240,7 +240,7 @@ export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseC
             {/* Receipt Upload - Commented out for now */}
             {/* <div className="space-y-2">
               <Label>Receipt (Optional)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-slate-400 transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -258,7 +258,7 @@ export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseC
                       </>
                     ) : (
                       <>
-                        <Upload className="h-8 w-8 text-gray-400" />
+                        <Upload className="h-8 w-8 text-slate-400" />
                         <p className="text-sm font-medium">Upload receipt</p>
                         <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
                       </>

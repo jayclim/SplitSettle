@@ -117,7 +117,7 @@ export default function GroupDetail() {
     } else if (amount < 0) {
       return { text: `-$${formatted}`, color: 'text-red-600', bg: 'bg-red-50', label: 'Owes' };
     }
-    return { text: '$0.00', color: 'text-gray-600', bg: 'bg-gray-50', label: '' };
+    return { text: '$0.00', color: 'text-slate-600', bg: 'bg-slate-50', label: '' };
   };
 
   if (loading) {
@@ -178,8 +178,8 @@ export default function GroupDetail() {
               </Avatar>
             ))}
             {group.members.length > 4 && (
-              <div className="h-8 w-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                <span className="text-xs text-gray-600">+{group.members.length - 4}</span>
+              <div className="h-8 w-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center">
+                <span className="text-xs text-slate-600">+{group.members.length - 4}</span>
               </div>
             )}
           </div>

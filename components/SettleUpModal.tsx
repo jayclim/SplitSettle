@@ -74,7 +74,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
       name: 'Bank Transfer',
       description: 'Direct bank transfer',
       icon: <Building className="h-6 w-6" />,
-      color: 'bg-gray-600'
+      color: 'bg-slate-600'
     }
   ];
 
@@ -212,7 +212,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {step === 'details' && (
               <>
-                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
                   <div className={`w-8 h-8 ${selectedMethodData?.color} rounded-lg flex items-center justify-center text-white`}>
                     {selectedMethodData?.icon}
                   </div>
