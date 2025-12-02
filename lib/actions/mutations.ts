@@ -2,7 +2,8 @@
 
 import { db } from '@/lib/db';
 import { groups, usersToGroups, expenses, expenseSplits } from '@/lib/db/schema';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@clerk/nextjs/server';
+import { syncUser } from '@/lib/auth/sync';
 import { revalidatePath } from 'next/cache';
 
 export type CreateGroupData = {
@@ -12,12 +13,11 @@ export type CreateGroupData = {
 };
 
 export async function createGroupAction(data: CreateGroupData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
 
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
+  const user = await syncUser();
+  if (!user) throw new Error('Unauthorized');
 
   if (!data.name) {
     throw new Error('Group name is required');
@@ -59,12 +59,11 @@ export type CreateExpenseData = {
 };
 
 export async function createExpenseAction(data: CreateExpenseData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
 
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
+  const user = await syncUser();
+  if (!user) throw new Error('Unauthorized');
 
   const groupIdNum = parseInt(data.groupId);
   if (isNaN(groupIdNum)) {

@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@clerk/nextjs/server';
 
 // const openai = new OpenAI({
 //     apiKey: process.env.OPENAI_API_KEY,
@@ -22,12 +22,8 @@ export type ParsedExpense = {
 
 export async function processAIExpenseAction(data: AIExpenseData): Promise<{ success: boolean; parsedExpense?: ParsedExpense }> {
     console.log(data);
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        throw new Error('Unauthorized');
-    }
+    const { userId } = await auth();
+    if (!userId) throw new Error('Unauthorized');
 
     throw new Error('AI features are currently disabled');
 

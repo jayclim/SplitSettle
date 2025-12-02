@@ -1,26 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import { db } from '../lib/db';
 import { users, groups, usersToGroups, expenses, expenseSplits } from '../lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
+import { createClerkClient } from '@clerk/backend';
+import { config } from 'dotenv';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Load env vars for standalone script execution
+config({ path: '.env.test.local' });
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
-
-async function findUserByEmail(email: string) {
-  const { data, error } = await supabase.auth.admin.listUsers();
-  if (error) {
-    console.error('Error listing users:', error);
-    return null;
-  }
-  return data.users.find(user => user.email === email) || null;
-}
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 async function seedTestData() {
   console.log('🌱 Seeding test data...');
@@ -36,30 +24,55 @@ async function seedTestData() {
       { email: 'frank@test.com', password: 'password123', name: 'Frank Miller', avatar_url: 'https://api.dicebear.com/8.x/initials/svg?seed=Frank' }
     ];
 
-    // Create users in Supabase Auth and public.users table
+    // Create users in Clerk and public.users table
     for (const user of testUsers) {
-      const existingUser = await findUserByEmail(user.email);
-      if (!existingUser) {
-        const { data, error } = await supabase.auth.admin.createUser({
-          email: user.email,
-          password: user.password,
-          user_metadata: { name: user.name, avatar_url: user.avatar_url },
-          email_confirm: true,
-        });
-        if (error) console.error(`Error creating user ${user.email}:`, error);
-        else {
-          console.log(`✅ Created auth user: ${user.email}`);
-          // Insert into public users table immediately after creation
-          await db.insert(users).values({
-            id: data.user.id,
-            email: data.user.email!,
-            name: user.name,
-            avatarUrl: user.avatar_url,
-            isGhost: false,
-          }).onConflictDoNothing();
+      let clerkUserId: string;
+
+      // 1. Check/Create in Clerk
+      try {
+        const clerkUserList = await clerk.users.getUserList({ emailAddress: [user.email], limit: 1 });
+
+        if (clerkUserList.data.length > 0) {
+          clerkUserId = clerkUserList.data[0].id;
+          console.log(`ℹ️  Clerk user ${user.email} already exists (${clerkUserId}).`);
+        } else {
+          console.log(`Creating Clerk user: ${user.email}`);
+          const newClerkUser = await clerk.users.createUser({
+            emailAddress: [user.email],
+            password: user.password,
+            firstName: user.name.split(' ')[0],
+            lastName: user.name.split(' ').slice(1).join(' '),
+            skipPasswordChecks: true,
+            skipPasswordRequirement: true,
+          });
+          clerkUserId = newClerkUser.id;
+          console.log(`✅ Created Clerk user: ${user.email} (${clerkUserId})`);
         }
+      } catch (error) {
+        console.error(`❌ Failed to manage Clerk user ${user.email}:`, error);
+        continue; // Skip to next user if Clerk fails
+      }
+
+      // 2. Create/Update in Local DB
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.email, user.email),
+      });
+
+      if (!existingUser) {
+        console.log(`✅ Creating local user: ${user.email}`);
+        await db.insert(users).values({
+          id: clerkUserId,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatar_url,
+          isGhost: false,
+        }).onConflictDoNothing();
+      } else if (existingUser.id !== clerkUserId) {
+        console.log(`🔄 Updating local user ID: ${existingUser.id} -> ${clerkUserId}`);
+        // We can't easily update PK with cascade in simple update, but since we have onUpdate: cascade now:
+        await db.update(users).set({ id: clerkUserId }).where(eq(users.email, user.email));
       } else {
-        console.log(`ℹ️  User ${user.email} already exists.`);
+        console.log(`ℹ️  Local user ${user.email} already exists and matches.`);
       }
     }
 
@@ -95,6 +108,7 @@ async function seedTestData() {
 
     // Add a ghost user to Weekend Trip
     const [ghostUser] = await db.insert(users).values({
+      id: `ghost_${randomUUID()}`,
       name: 'Ghost Rider',
       email: `ghost_${Date.now()}@placeholder.com`,
       isGhost: true,

@@ -2,7 +2,8 @@
 
 import { db } from '@/lib/db';
 import { usersToGroups, expenses, users, groups, messages, expenseSplits } from '@/lib/db/schema';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@clerk/nextjs/server';
+import { syncUser } from '@/lib/auth/sync';
 import { eq, inArray, desc, and } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { invitations } from '@/lib/db/schema';
@@ -89,12 +90,11 @@ export type Balance = {
 };
 
 export async function getGroupsForUser(): Promise<GroupCardData[]> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupMemberships = await db.query.usersToGroups.findMany({
     where: eq(usersToGroups.userId, user.id),
@@ -171,12 +171,11 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
 }
 
 export async function getGroup(groupId: string): Promise<{ group: GroupDetail }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -269,12 +268,11 @@ export async function getGroup(groupId: string): Promise<{ group: GroupDetail }>
 }
 
 export async function getMessages(groupId: string): Promise<{ messages: Message[]; hasMore: boolean }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -362,12 +360,11 @@ export async function getMessages(groupId: string): Promise<{ messages: Message[
 }
 
 export async function getBalances(groupId: string): Promise<{ balances: Balance[] }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -490,12 +487,11 @@ export async function sendMessage(data: {
   content: string;
   replyToId?: string;
 }): Promise<{ message: Message }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(data.groupId);
   if (isNaN(groupIdNum)) {
@@ -547,12 +543,11 @@ export async function sendMessage(data: {
 }
 
 export async function addReaction(messageId: string, emoji: string): Promise<void> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   // For now, this is a mock implementation
   // In a real app, you'd store reactions in a separate table
@@ -582,12 +577,11 @@ export type Expense = {
 };
 
 export async function getExpenses(groupId: string): Promise<{ expenses: Expense[] }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -658,12 +652,11 @@ export async function getExpenses(groupId: string): Promise<{ expenses: Expense[
 }
 
 export async function createGroup(name: string, description?: string, coverImageUrl?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   // Create the group
   const [newGroup] = await db.insert(groups).values({
@@ -683,12 +676,11 @@ export async function createGroup(name: string, description?: string, coverImage
 }
 
 export async function createGhostMember(groupId: string, name: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -708,7 +700,9 @@ export async function createGhostMember(groupId: string, name: string) {
   }
 
   // Create ghost user
+  const ghostId = `ghost_${crypto.randomUUID()}`;
   const [ghostUser] = await db.insert(users).values({
+    id: ghostId,
     name,
     email: `ghost_${Date.now()}_${Math.random().toString(36).substring(7)}@placeholder.com`, // Unique placeholder email
     isGhost: true,
@@ -725,12 +719,11 @@ export async function createGhostMember(groupId: string, name: string) {
 }
 
 export async function inviteMember(groupId: string, email: string, ghostUserId?: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const groupIdNum = parseInt(groupId);
   if (isNaN(groupIdNum)) {
@@ -778,12 +771,11 @@ export async function inviteMember(groupId: string, email: string, ghostUserId?:
 }
 
 export async function getPendingInvitations() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   if (!user.email) return [];
 
@@ -807,12 +799,11 @@ export async function getPendingInvitations() {
 }
 
 export async function respondToInvitation(invitationId: number, accept: boolean) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
 
-  if (!user) {
-    redirect('/login');
-  }
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
 
   const invitation = await db.query.invitations.findFirst({
     where: eq(invitations.id, invitationId),

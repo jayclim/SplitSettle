@@ -1,16 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
 import { db } from '../lib/db';
 import { users, groups, usersToGroups, expenses, expenseSplits, settlements, messages } from '../lib/db/schema';
+import { createClerkClient } from '@clerk/backend';
+import { config } from 'dotenv';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Load env vars for standalone script execution
+config({ path: '.env.test.local' });
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 async function cleanTestData() {
   console.log('🧹 Cleaning test data...');
@@ -19,46 +15,43 @@ async function cleanTestData() {
     // Delete in correct order to respect foreign key constraints
     await db.delete(expenseSplits);
     console.log('✅ Deleted expense splits');
-    
+
     await db.delete(expenses);
     console.log('✅ Deleted expenses');
-    
+
     await db.delete(messages);
     console.log('✅ Deleted messages');
-    
+
     await db.delete(settlements);
     console.log('✅ Deleted settlements');
-    
+
     await db.delete(usersToGroups);
     console.log('✅ Deleted user-group relationships');
-    
+
     await db.delete(groups);
     console.log('✅ Deleted groups');
-    
+
     await db.delete(users);
     console.log('✅ Deleted users from public table');
 
-    // Dynamically find and delete all test auth users
-    console.log('🔥 Finding and deleting test auth users...');
-    const { data: { users: authUsers }, error } = await supabase.auth.admin.listUsers();
+    // Delete test users from Clerk
+    console.log('🔥 Finding and deleting Clerk test users...');
+    try {
+      const testEmails = [
+        'alice@test.com', 'bob@test.com', 'charlie@test.com',
+        'dave@test.com', 'eve@test.com', 'frank@test.com'
+      ];
 
-    if (error) {
-      throw new Error(`Could not list auth users: ${error.message}`);
-    }
-
-    const testUsersToDelete = authUsers.filter(user => user.email?.endsWith('@test.com'));
-
-    if (testUsersToDelete.length === 0) {
-      console.log('ℹ️ No test users found in Supabase Auth to delete.');
-    } else {
-      for (const user of testUsersToDelete) {
-        try {
-          await supabase.auth.admin.deleteUser(user.id);
-          console.log(`✅ Deleted auth user: ${user.email}`);
-        } catch (deleteError) {
-          console.error(`❌ Failed to delete auth user ${user.email}:`, deleteError);
+      for (const email of testEmails) {
+        const userList = await clerk.users.getUserList({ emailAddress: [email], limit: 1 });
+        if (userList.data.length > 0) {
+          await clerk.users.deleteUser(userList.data[0].id);
+          console.log(`✅ Deleted Clerk user: ${email}`);
         }
       }
+    } catch (error) {
+      console.error('❌ Error deleting Clerk users:', error);
+      // Don't fail the script if Clerk deletion fails, just log it
     }
 
     console.log('🎉 Test data cleanup completed!');

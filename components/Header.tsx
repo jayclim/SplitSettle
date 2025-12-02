@@ -1,19 +1,11 @@
 "use client";
 
-import { Zap, LogOut } from 'lucide-react';
-import { Button } from "./ui/button";
+import { Zap } from 'lucide-react';
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { UserButton } from "@clerk/nextjs";
 
 export function Header() {
   const router = useRouter();
-  const supabase = createClient();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    // Force a hard reload to clear client-side cache
-    window.location.href = "/auth/login";
-  };
 
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
@@ -30,9 +22,7 @@ export function Header() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </div>
     </header>

@@ -8,7 +8,6 @@ import {
   boolean,
   pgEnum,
   decimal,
-  uuid,
 } from 'drizzle-orm/pg-core';
 import type { AdapterAccount } from '@auth/core/adapters';
 import { relations } from 'drizzle-orm';
@@ -25,7 +24,7 @@ export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'acc
 // =================================
 
 export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
+  id: text('id').primaryKey(), // Changed from uuid to text for Clerk ID
   name: text('name'),
   email: text('email').notNull().unique(),
   emailVerified: timestamp('emailVerified', { mode: 'date', withTimezone: true }),
@@ -37,9 +36,9 @@ export const users = pgTable('users', {
 export const accounts = pgTable(
   'accounts',
   {
-    userId: uuid('userId')
+    userId: text('userId') // Changed from uuid
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     type: text('type').$type<AdapterAccount['type']>().notNull(),
     provider: text('provider').notNull(),
     providerAccountId: text('providerAccountId').notNull(),
@@ -60,9 +59,9 @@ export const accounts = pgTable(
 
 export const sessions = pgTable('sessions', {
   sessionToken: text('sessionToken').notNull().primaryKey(),
-  userId: uuid('userId')
+  userId: text('userId') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   expires: timestamp('expires', { mode: 'date', withTimezone: true }).notNull(),
 });
 
@@ -90,9 +89,9 @@ export const groups = pgTable('groups', {
 export const usersToGroups = pgTable(
   'users_to_groups',
   {
-    userId: uuid('user_id')
+    userId: text('user_id') // Changed from uuid
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     groupId: integer('group_id')
       .notNull()
       .references(() => groups.id, { onDelete: 'cascade' }),
@@ -110,9 +109,9 @@ export const expenses = pgTable('expenses', {
     .references(() => groups.id, { onDelete: 'cascade' }),
   description: text('description').notNull(),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  paidById: uuid('paid_by_id')
+  paidById: text('paid_by_id') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   date: timestamp('date', { withTimezone: true }).notNull(),
   category: text('category'),
   receiptUrl: text('receipt_url'),
@@ -127,9 +126,9 @@ export const expenseSplits = pgTable(
     expenseId: integer('expense_id')
       .notNull()
       .references(() => expenses.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
+    userId: text('user_id') // Changed from uuid
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   }
   // Remove the table configuration function entirely since we're using 'id' as primary key
@@ -140,12 +139,12 @@ export const settlements = pgTable('settlements', {
   groupId: integer('group_id')
     .notNull()
     .references(() => groups.id, { onDelete: 'cascade' }),
-  payerId: uuid('payer_id')
+  payerId: text('payer_id') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  payeeId: uuid('payee_id')
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  payeeId: text('payee_id') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   date: timestamp('date', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -158,9 +157,9 @@ export const messages = pgTable('messages', {
   groupId: integer('group_id')
     .notNull()
     .references(() => groups.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id')
+  userId: text('user_id') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   content: text('content').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -171,11 +170,11 @@ export const invitations = pgTable('invitations', {
     .notNull()
     .references(() => groups.id, { onDelete: 'cascade' }),
   email: text('email').notNull(),
-  invitedById: uuid('invited_by_id')
+  invitedById: text('invited_by_id') // Changed from uuid
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  ghostUserId: uuid('ghost_user_id')
-    .references(() => users.id, { onDelete: 'set null' }),
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  ghostUserId: text('ghost_user_id') // Changed from uuid
+    .references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   status: invitationStatusEnum('status').default('pending').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

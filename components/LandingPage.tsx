@@ -17,6 +17,40 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { useUser } from '@clerk/nextjs';
+
+function AuthButtons() {
+  const router = useRouter();
+  const { isSignedIn, isLoaded } = useUser();
+
+  if (!isLoaded) return null;
+
+  if (isSignedIn) {
+    return (
+      <Button 
+        onClick={() => router.push('/dashboard')} 
+        className="rounded-full px-6 bg-black hover:bg-slate-800 text-white"
+      >
+        Go to Dashboard
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button variant="ghost" onClick={() => router.push('/sign-in')} className="font-medium">
+        Log in
+      </Button>
+      <Button 
+        onClick={() => router.push('/sign-up')} 
+        className="rounded-full px-6 bg-black hover:bg-slate-800 text-white"
+      >
+        Get Started
+      </Button>
+    </>
+  );
+}
+
 export function LandingPage() {
   const router = useRouter();
 
@@ -39,15 +73,7 @@ export function LandingPage() {
           </nav> */}
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push('/auth/login')} className="font-medium">
-              Log in
-            </Button>
-            <Button 
-              onClick={() => router.push('/auth/register')} 
-              className="rounded-full px-6 bg-black hover:bg-slate-800 text-white"
-            >
-              Get Started
-            </Button>
+            <AuthButtons />
           </div>
         </div>
       </header>
@@ -71,7 +97,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
             <Button 
               size="lg" 
-              onClick={() => router.push('/auth/register')}
+              onClick={() => router.push('/sign-up')}
               className="rounded-full h-14 px-8 text-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-90 transition-opacity"
             >
               Start Splitting Free
@@ -101,7 +127,7 @@ export function LandingPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Natural Chat</h3>
               <p className="text-slate-500 leading-relaxed">
-                "Dinner was $45 paid by me." Just type it in chat, and our AI handles the math instantly.
+                &quot;Dinner was $45 paid by me.&quot; Just type it in chat, and our AI handles the math instantly.
               </p>
             </div>
 
@@ -192,10 +218,9 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Focus on Product Section */}
         <section className="container mx-auto px-6 mb-32">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Focus on the fun, we'll handle the math</h2>
+            <h2 className="text-3xl font-bold mb-4">Focus on the fun, we&apos;ll handle the math</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -224,30 +249,30 @@ export function LandingPage() {
 
             <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[400px]">
               <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-4">Clear Balances</h3>
-                <p className="text-slate-500 mb-8">Know exactly who owes what at a glance.</p>
+                <h3 className="text-2xl font-bold mb-4">What Our Users Say</h3>
+                <p className="text-slate-500 mb-8">Hear from people who love SplitSettle.</p>
               </div>
               <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-200"></div>
+                  <div className="p-4 bg-white rounded-xl shadow-sm border">
+                    <p className="text-gray-600 mb-4">&quot;SplitSettle has completely changed how we manage our apartment expenses. No more awkward conversations about money!&quot;</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
                       <div>
-                        <div className="font-bold text-sm">Sarah</div>
-                        <div className="text-xs text-green-700">Owes you</div>
+                        <p className="font-semibold">Sarah J.</p>
+                        <p className="text-sm text-gray-500">Roommate</p>
                       </div>
                     </div>
-                    <div className="font-bold text-green-700">$24.50</div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-200"></div>
+                  <div className="p-4 bg-white rounded-xl shadow-sm border">
+                    <p className="text-gray-600 mb-4">&quot;The best way to keep track of shared costs during trips. Highly recommended for any group travel.&quot;</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
                       <div>
-                        <div className="font-bold text-sm">Mike</div>
-                        <div className="text-xs text-red-700">You owe</div>
+                        <p className="font-semibold">Mike T.</p>
+                        <p className="text-sm text-gray-500">Traveler</p>
                       </div>
                     </div>
-                    <div className="font-bold text-red-700">$12.00</div>
                   </div>
                 </div>
               </div>
@@ -266,7 +291,7 @@ export function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  onClick={() => router.push('/auth/register')}
+                  onClick={() => router.push('/sign-up')}
                   className="rounded-full h-14 px-8 text-lg bg-white text-black hover:bg-slate-200"
                 >
                   Create Free Account

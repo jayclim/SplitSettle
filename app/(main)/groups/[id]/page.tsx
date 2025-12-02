@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import { ExpenseHistory } from '@/components/ExpenseHistory';
 import { ArrowLeft } from 'lucide-react';
 import { useGroup, useGroupBalances, useGroupExpenses, useGroupMessages } from '@/hooks/useGroupDetails';
 import { type Balance } from '@/lib/actions/groups';
-import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@clerk/nextjs';
 // import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { SettleUpModal } from '@/components/SettleUpModal';
@@ -27,6 +27,9 @@ import { SettleUpModal } from '@/components/SettleUpModal';
 export default function GroupDetail() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useUser();
+  const currentUserId = user?.id || null;
+
   const id = params.id as string;
   const { data: groupData, isLoading: groupLoading, refetch: refetchGroup } = useGroup(id);
   const { refetch: refetchMessages } = useGroupMessages(id);
@@ -44,21 +47,8 @@ export default function GroupDetail() {
   // const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [settleUpModalOpen, setSettleUpModalOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<Balance | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("expenses");
   // const { toast } = useToast();
-
-  const getCurrentUser = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setCurrentUserId(user.id);
-    }
-  };
-
-  useEffect(() => {
-    getCurrentUser();
-  }, []);
 
   // const handleSendMessage = async (e: React.FormEvent) => {
   //   e.preventDefault();
