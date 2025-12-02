@@ -360,12 +360,16 @@ export function LandingPage() {
           </div>
 
           <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-slate-500">
-              © 2025 Divvy. All rights reserved. | designed and developed by{' '}
-              <a href="https://jaydenclim.com" target="_blank" rel="noopener noreferrer" className="text-black hover:underline">
-                Jayden Lim
-              </a>
-            </p>
+            <div className="w-full flex flex-col md:flex-row items-center justify-center gap-1 text-sm text-slate-500">
+              <span>© 2025 Divvy. All rights reserved.</span>
+              <span className="hidden md:inline">|</span>
+              <span>
+                designed and developed by{' '}
+                <a href="https://jaydenclim.com" target="_blank" rel="noopener noreferrer" className="text-black hover:underline">
+                  Jayden Lim
+                </a>
+              </span>
+            </div>
             {/* <div className="flex gap-6 text-sm text-slate-500">
               <a href="#" className="hover:text-black">Privacy Policy</a>
               <a href="#" className="hover:text-black">Terms of Service</a>
