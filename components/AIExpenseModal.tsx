@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sparkles, Mic, Camera, Loader2, Check, Edit } from 'lucide-react';
@@ -34,7 +34,7 @@ export function AIExpenseModal({ open, onClose, groupId, members, onExpenseCreat
   const [recording, setRecording] = useState(false);
   const { toast } = useToast();
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm<AIFormData>();
+  const { register, handleSubmit, reset } = useForm<AIFormData>();
   const { register: registerConfirm, handleSubmit: handleConfirmSubmit, setValue: setConfirmValue, watch: watchConfirm } = useForm<CreateExpenseData>();
 
   const getInitials = (name: string) => {
@@ -161,13 +161,11 @@ export function AIExpenseModal({ open, onClose, groupId, members, onExpenseCreat
         {step === 'input' && (
           <div className="space-y-6">
             <div className="text-center">
-              <p className="text-muted-foreground mb-4">
-                Describe your expense in natural language and let AI handle the rest!
+              <p className="text-sm text-muted-foreground">
+                Simply describe the expense naturally, like &quot;Paid $45 for dinner at Mario&apos;s with Alex and Sarah&quot; or &quot;Split $120 grocery bill equally&quot;.
               </p>
               <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
-                <Badge variant="outline">"I paid $45 for lunch for me and Sarah"</Badge>
-                <Badge variant="outline">"Split $120 dinner 4 ways"</Badge>
-                <Badge variant="outline">"Uber to airport $35, split with roommates"</Badge>
+                <Badge variant="outline">&quot;Uber to airport $35, split with roommates&quot;</Badge>
               </div>
             </div>
 

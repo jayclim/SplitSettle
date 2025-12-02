@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { useState } from 'react';
+import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
-import { Receipt, Calendar, DollarSign, Users, Filter, Plus } from 'lucide-react';
-import { getExpenses, type Expense } from '@/lib/actions/groups';
-import { useToast } from '@/hooks/useToast';
+import { Receipt, Calendar, DollarSign, Users, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useGroupExpenses } from '@/hooks/useGroupDetails';
 

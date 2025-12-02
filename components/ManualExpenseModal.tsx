@@ -3,12 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Plus, Calculator, Upload, Camera } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { createExpenseAction, CreateExpenseData } from '@/lib/actions/mutations';
 import { GroupMember } from '@/api/groups';
@@ -25,7 +24,7 @@ interface ManualExpenseModalProps {
 
 export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseCreated, currentUserId }: ManualExpenseModalProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateExpenseData>({
@@ -46,16 +45,16 @@ export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseC
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      toast({
-        title: "Receipt uploaded",
-        description: `${file.name} has been attached`,
-      });
-    }
-  };
+  // const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = event.target.files?.[0];
+  //   if (file) {
+  //     setSelectedFile(file);
+  //     toast({
+  //       title: "Receipt uploaded",
+  //       description: `${file.name} has been attached`,
+  //     });
+  //   }
+  // };
 
   const onSubmit = async (data: CreateExpenseData) => {
     try {
@@ -106,7 +105,6 @@ export function ManualExpenseModal({ open, onClose, groupId, members, onExpenseC
   const handleClose = () => {
     onClose();
     reset();
-    setSelectedFile(null);
   };
 
   const handleSelectAll = () => {

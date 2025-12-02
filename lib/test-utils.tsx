@@ -22,7 +22,7 @@ export function createTestSupabaseClient() {
 }
 
 // Helper to sign in test user (mock implementation)
-export async function signInTestUser(email: string, password: string) {
+export async function signInTestUser(email: string) {
   const mockUser = {
     id: 'test-user-id',
     email,
@@ -48,12 +48,17 @@ export async function signOutTestUser() {
 }
 
 // Custom render with providers
-interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {}
+// interface TestUser extends User {
+//     // Add any additional properties if needed
+//     [key: string]: any;
+// }
+// interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {}
 
 export function renderWithProviders(
   ui: ReactElement,
-  options?: CustomRenderOptions
+  options: RenderOptions = {}
 ) {
+  // const { ...renderOptions } = options;
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <ThemeProvider attribute="class" defaultTheme="light">

@@ -1,27 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Badge } from './ui/badge';
-import { 
-  Sparkles, 
-  MessageCircle, 
-  Calculator, 
-  Smartphone, 
-  Zap, 
-  ArrowRight, 
-  Play, 
-  CheckCircle2, 
-  CreditCard, 
-  Wallet, 
-  DollarSign, 
-  Users, 
+import {
+  Sparkles,
+  Zap,
+  ArrowRight,
+  Globe,
   ShieldCheck,
-  Globe
+  Smartphone,
+  MessageCircle,
+  Calculator,
+  CheckCircle2,
+  CreditCard,
+  Wallet,
+  DollarSign,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
 export function LandingPage() {
   const router = useRouter();
@@ -95,7 +89,7 @@ export function LandingPage() {
         </section>
 
         {/* 3-Column Features */}
-        {/* <section className="container mx-auto px-6 mb-32" id="features">
+        <section className="container mx-auto px-6 mb-32" id="features">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">All-in-One Expense Management</h2>
           </div>
@@ -131,10 +125,10 @@ export function LandingPage() {
               </p>
             </div>
           </div>
-        </section> */}
+        </section>
 
         {/* 2x2 Grid Features */}
-        {/* <section className="container mx-auto px-6 mb-32">
+        <section className="container mx-auto px-6 mb-32">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Built for Modern Groups</h2>
             <p className="text-slate-500">Everything you need to manage shared expenses.</p>
@@ -181,10 +175,10 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-        </section> */}
+        </section>
 
         {/* Ecosystem/Integrations */}
-        {/* <section className="container mx-auto px-6 mb-32">
+        <section className="container mx-auto px-6 mb-32">
           <div className="text-center mb-12">
             <h2 className="text-2xl font-bold mb-4">Settle Up Your Way</h2>
             <p className="text-slate-500">Compatible with your favorite payment apps.</p>
@@ -196,10 +190,10 @@ export function LandingPage() {
             <div className="flex items-center gap-2 font-bold text-xl"><DollarSign className="h-6 w-6" /> PayPal</div>
             <div className="flex items-center gap-2 font-bold text-xl"><Zap className="h-6 w-6" /> Zelle</div>
           </div>
-        </section> */}
+        </section>
 
         {/* Focus on Product Section */}
-        {/* <section className="container mx-auto px-6 mb-32">
+        <section className="container mx-auto px-6 mb-32">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Focus on the fun, we'll handle the math</h2>
           </div>
@@ -259,7 +253,7 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-        </section> */}
+        </section>
 
         {/* CTA */}
         <section className="container mx-auto px-6 mb-20">

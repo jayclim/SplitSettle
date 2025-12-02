@@ -11,7 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { AdapterAccount } from '@auth/core/adapters';
-import { relations, SQL, Placeholder } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 
 // =================================
 //          ENUMS
@@ -151,7 +151,7 @@ export const settlements = pgTable('settlements', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-type AnyPlaceholder = Placeholder<string, unknown>;
+// type AnyPlaceholder = Placeholder<string, unknown>;
 
 export const messages = pgTable('messages', {
   id: serial('id').primaryKey(),

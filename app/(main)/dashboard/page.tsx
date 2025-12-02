@@ -6,19 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GroupCard } from '@/components/GroupCard';
 import { CreateGroupModal } from '@/components/CreateGroupModal';
-import { JoinGroupModal } from '@/components/JoinGroupModal';
 import { Users, TrendingUp, DollarSign, Sparkles, Mail } from 'lucide-react';
-import { GroupCardData, getPendingInvitations, respondToInvitation } from '@/lib/actions/groups';
+import { getPendingInvitations, respondToInvitation } from '@/lib/actions/groups';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/useToast';
 import { useGroups } from '@/hooks/useGroups';
+
+interface PendingInvite {
+  id: number;
+  group: { name: string };
+  invitedBy: { name: string | null };
+}
 
 export default function Dashboard() {
   const { data: groups = [], isLoading: loading, refetch } = useGroups();
   const { toast } = useToast();
-  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [invitesOpen, setInvitesOpen] = useState(false);
 
   // Load pending invites on mount
@@ -27,8 +31,8 @@ export default function Dashboard() {
       try {
         const invites = await getPendingInvitations();
         setPendingInvites(invites);
-      } catch (error) {
-        console.error('Failed to load invites', error);
+      } catch {
+        console.error('Failed to load invites');
       }
     };
     loadInvites();
@@ -45,7 +49,7 @@ export default function Dashboard() {
       const invites = await getPendingInvitations();
       setPendingInvites(invites);
       if (accept) refetch();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to respond to invitation",
@@ -55,7 +59,7 @@ export default function Dashboard() {
   };
 
   const handleGroupUpdate = () => {
-    refetch();
+    refetch(); // Assuming refetch from useGroups covers both groups and balances
   };
 
   // Calculate stats
@@ -106,9 +110,9 @@ export default function Dashboard() {
           <Sparkles className="h-12 w-12 text-white" />
         </div>
         <h2 className="text-2xl font-bold mb-4">Welcome to SplitSettle!</h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-          Ready to make splitting expenses effortless? Create your first group or join an existing one to get started.
-        </p>
+              <p className="text-muted-foreground mb-4">
+                You haven&apos;t joined any groups yet. Create a new group or join an existing one to start splitting expenses!
+              </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <CreateGroupModal onGroupCreated={handleGroupUpdate} />
           {/* <JoinGroupModal onGroupJoined={handleGroupUpdate} /> */}
@@ -146,7 +150,7 @@ export default function Dashboard() {
                   {pendingInvites.map((invite) => (
                     <div key={invite.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
-                        <p className="font-medium">Join "{invite.group.name}"</p>
+                        <p className="font-medium">Join &quot;{invite.group.name}&quot;</p>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <span>Invited by {invite.invitedBy.name}</span>
                         </div>

@@ -4,12 +4,11 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Settings, Users, Bell, Shield, Trash2, UserMinus, Crown, Mail, Ghost } from 'lucide-react';
-import { Group, GroupMember } from '@/api/groups';
+import { Settings, Users, Trash2, UserMinus, Crown, Mail, Ghost } from 'lucide-react';
+import { Group } from '@/api/groups';
 import { createGhostMember, inviteMember } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
 
@@ -44,6 +43,7 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
       });
       onGroupUpdated();
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to remove member",
@@ -65,6 +65,7 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
       });
       onGroupUpdated();
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to update member role",

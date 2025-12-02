@@ -39,11 +39,11 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
       }
       
       toast({
-        title: "Joined group!",
-        description: "Welcome to your new group.",
+        title: "Success",
+        description: "You have joined the group successfully",
       });
-      setOpen(false);
       reset();
+      setOpen(false);
       onGroupJoined();
     } catch (error) {
       console.error('Error joining group:', error);
@@ -55,11 +55,6 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    reset();
   };
 
   return (
@@ -74,6 +69,9 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
         <DialogHeader>
           <DialogTitle>Join a Group</DialogTitle>
         </DialogHeader>
+        <p className="text-center text-sm text-muted-foreground mb-4">
+          Ask the group admin for the invite code or link. It usually looks like &apos;GR-1234&apos;.
+        </p>
 
         <Tabs defaultValue="code" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -176,7 +174,7 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
                   <CardTitle className="text-base">Scan QR Code</CardTitle>
                 </div>
                 <CardDescription>
-                  Use your camera to scan the group's QR code
+                  Use your camera to scan the group&apos;s QR code
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
@@ -184,7 +182,7 @@ export function JoinGroupModal({ onGroupJoined }: JoinGroupModalProps) {
                   <Camera className="h-12 w-12 text-slate-400" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  QR code scanning will be available soon
+                  QR code scanning will be available soon. For now, please use the invite code or link.
                 </p>
                 <Button disabled className="w-full">
                   Open Camera

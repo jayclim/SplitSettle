@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { Reply, Smile, MoreHorizontal } from 'lucide-react';
+import { Reply, Smile } from 'lucide-react';
 import { Message } from '@/api/messages';
 import { formatDistanceToNow } from 'date-fns';
 

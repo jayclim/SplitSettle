@@ -3,7 +3,6 @@
 import { db } from '@/lib/db';
 import { groups, usersToGroups, expenses, expenseSplits } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
-import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export type CreateGroupData = {
@@ -100,7 +99,7 @@ export async function createExpenseAction(data: CreateExpenseData) {
     // Currently only handling 'equal' split type for simplicity, as per original mock
     // In a real app, we'd handle other split types here
     const splitAmount = data.amount / data.splitBetween.length;
-    
+
     const splitsToInsert = data.splitBetween.map(userId => ({
       expenseId: newExpense.id,
       userId: userId,
@@ -113,7 +112,7 @@ export async function createExpenseAction(data: CreateExpenseData) {
 
     revalidatePath(`/groups/${data.groupId}`);
     revalidatePath('/dashboard');
-    
+
     return { success: true, expense: newExpense };
   } catch (error) {
     console.error('Error creating expense:', error);
@@ -122,8 +121,9 @@ export async function createExpenseAction(data: CreateExpenseData) {
 }
 
 export async function joinGroupAction(code: string) {
-    // TODO: Implement join by code logic
-    // For now, this is a placeholder as the invite system wasn't fully detailed in schema
-    // We might need to add an 'inviteCode' to the groups table or a separate invites table
-    throw new Error("Join by code not yet implemented");
+  // TODO: Implement join by code logic
+  // For now, this is a placeholder as the invite system wasn't fully detailed in schema
+  // We might need to add an 'inviteCode' to the groups table or a separate invites table
+  console.log("Joining with code:", code);
+  throw new Error("Join by code not yet implemented");
 }

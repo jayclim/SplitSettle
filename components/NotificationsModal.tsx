@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Card, CardContent } from './ui/card';
 import { Skeleton } from './ui/skeleton';
-import { Bell, DollarSign, Users, MessageCircle, Check, X } from 'lucide-react';
+import { Bell, DollarSign, Users, MessageCircle, X, Check } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -31,7 +30,7 @@ export function NotificationsModal() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       // Mock API call
@@ -85,7 +84,7 @@ export function NotificationsModal() {
         setLoading(false);
       }, 500);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to load notifications",
@@ -93,17 +92,13 @@ export function NotificationsModal() {
       });
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     if (open) {
       loadNotifications();
     }
-  }, [open]);
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  }, [open, loadNotifications]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -145,6 +140,7 @@ export function NotificationsModal() {
       // Remove notification or mark as handled
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to complete action",
@@ -162,6 +158,7 @@ export function NotificationsModal() {
       });
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to complete action",

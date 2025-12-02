@@ -1,8 +1,6 @@
 "use client";
 
-import { Bell, LogOut, Zap } from "lucide-react";
-import { NotificationsModal } from "./NotificationsModal";
-import { ThemeToggle } from "./ui/theme-toggle";
+import { Zap, LogOut } from 'lucide-react';
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -32,8 +30,6 @@ export function Header() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          {/* <NotificationsModal /> */}
-          {/* <ThemeToggle /> */}
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
           </Button>

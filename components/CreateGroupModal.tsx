@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Plus, Users, MapPin, Home } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { createGroup } from '@/lib/actions/groups';
@@ -114,7 +114,8 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
         {step === 1 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Get started quickly with a template or create a custom group
+              Create a group to split expenses with friends, roommates, or family. You can add members by email or share an invite link.
+              For example, &quot;Summer Trip 2024&quot; or &quot;Apartment 4B&quot;.
             </p>
             <div className="space-y-3">
               {templates.map((template) => (
@@ -188,9 +189,9 @@ export function CreateGroupModal({ onGroupCreated }: CreateGroupModalProps) {
               <Users className="h-8 w-8" />
             </div>
             <div>
-              <h3 className="text-lg font-medium">"{createdGroup?.name}" is ready!</h3>
+              <h3 className="text-lg font-medium">&quot;{createdGroup?.name}&quot; is ready!</h3>
               <p className="text-sm text-muted-foreground mt-2">
-                You can now add members to your group. Go to the "Members" tab in the group settings to add friends or create "ghost" members for quick splitting.
+                You can now add members to your group. Go to the &quot;Members&quot; tab in the group settings to add friends or create &quot;ghost&quot; members for quick splitting.
               </p>
             </div>
             <Button

@@ -1,6 +1,5 @@
 'use server';
 
-import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 
 // const openai = new OpenAI({
@@ -15,12 +14,14 @@ export type AIExpenseData = {
 export type ParsedExpense = {
     description: string;
     amount: number;
+    date: string;
     splitBetween: string[]; // Names or descriptions of people
     category: string;
     splitType: 'equal' | 'custom';
 };
 
-export async function processAIExpenseAction(data: AIExpenseData) {
+export async function processAIExpenseAction(data: AIExpenseData): Promise<{ success: boolean; parsedExpense?: ParsedExpense }> {
+    console.log(data);
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

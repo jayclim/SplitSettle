@@ -87,6 +87,17 @@ export default function LoginPage() {
                 {...register("password", { required: true })}
               />
             </div>
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              By clicking continue, you agree to our{' '}
+              <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+                Privacy Policy
+              </Link>
+              .
+            </p>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 "Loading..."
@@ -100,7 +111,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="text-sm">
-          <p>Don't have an account? <Link href="/register" className="underline">Sign up</Link></p>
+          <p>Don&apos;t have an account? <Link href="/register" className="underline">Sign up</Link></p>
         </CardFooter>
       </Card>
     </div>

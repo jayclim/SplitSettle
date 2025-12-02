@@ -1,6 +1,6 @@
 // filepath: app/api/groups/route.ts
 import { db } from "@/lib/db";
-import { groups, usersToGroups, users } from "@/lib/db/schema";
+import { groups, usersToGroups } from "@/lib/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -20,9 +20,9 @@ export async function GET() {
             description: groups.description,
             coverImageUrl: groups.coverImageUrl,
         })
-        .from(groups)
-        .innerJoin(usersToGroups, eq(groups.id, usersToGroups.groupId))
-        .where(eq(usersToGroups.userId, user.id));
+            .from(groups)
+            .innerJoin(usersToGroups, eq(groups.id, usersToGroups.groupId))
+            .where(eq(usersToGroups.userId, user.id));
 
         // Here you would also calculate balance, unread count etc.
         // For now, returning the basic group info.

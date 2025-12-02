@@ -6,47 +6,47 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageBubble } from '@/components/MessageBubble';
+// import { MessageBubble } from '@/components/MessageBubble';
 import { AIExpenseModal } from '@/components/AIExpenseModal';
 import { ManualExpenseModal } from '@/components/ManualExpenseModal';
 import { GroupSettingsModal } from '@/components/GroupSettingsModal';
 import { ExpenseHistory } from '@/components/ExpenseHistory';
-import { ArrowLeft, Settings, Sparkles, Plus, Send, Smile, Paperclip } from 'lucide-react';
-import { useGroup, useGroupMessages, useGroupBalances, useGroupExpenses } from '@/hooks/useGroupDetails';
-import { sendMessage, addReaction, type GroupDetail as Group, type Message, type Balance } from '@/lib/actions/groups';
+import { ArrowLeft } from 'lucide-react';
+import { useGroup, useGroupBalances, useGroupExpenses, useGroupMessages } from '@/hooks/useGroupDetails';
+import { type Balance } from '@/lib/actions/groups';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/hooks/useToast';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { SettleUpModal } from '@/components/SettleUpModal';
+// import { useToast } from '@/hooks/useToast';
 
-interface MessageResponse {
-  message: Message;
-}
+// interface MessageResponse {
+//   message: Message;
+// }
 
 export default function GroupDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const { data: groupData, isLoading: groupLoading, refetch: refetchGroup } = useGroup(id);
-  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGroupMessages(id);
+  const { refetch: refetchMessages } = useGroupMessages(id);
   const { data: balancesData, isLoading: balancesLoading, refetch: refetchBalances } = useGroupBalances(id);
   const { refetch: refetchExpenses } = useGroupExpenses(id);
   
   const group = groupData?.group || null;
-  const messages = messagesData?.messages || [];
+  // const messages = messagesData?.messages || [];
   const balances = balancesData?.balances || [];
   const loading = groupLoading; // Main loading state
 
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [manualModalOpen, setManualModalOpen] = useState(false);
-  const [messageText, setMessageText] = useState('');
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  // const [messageText, setMessageText] = useState('');
+  // const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [settleUpModalOpen, setSettleUpModalOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<Balance | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("expenses");
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   const getCurrentUser = async () => {
     const supabase = createClient();
@@ -60,50 +60,50 @@ export default function GroupDetail() {
     getCurrentUser();
   }, []);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!messageText.trim() || !id) return;
+  // const handleSendMessage = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!messageText.trim() || !id) return;
 
-    try {
-      console.log('Sending message:', messageText);
-      const response = await sendMessage({
-        groupId: id,
-        content: messageText,
-        replyToId: replyingTo?._id
-      }) as MessageResponse;
+  //   try {
+  //     console.log('Sending message:', messageText);
+  //     const response = await sendMessage({
+  //       groupId: id,
+  //       content: messageText,
+  //       replyToId: replyingTo?._id
+  //     }) as MessageResponse;
       
-      // setMessages(prev => [...prev, response.message]);
-      refetchMessages(); // Refresh messages to ensure consistency
-      setMessageText('');
-      setReplyingTo(null);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
-        variant: "destructive",
-      });
-    }
-  };
+  //     // setMessages(prev => [...prev, response.message]);
+  //     refetchMessages(); // Refresh messages to ensure consistency
+  //     setMessageText('');
+  //     setReplyingTo(null);
+  //   } catch (error) {
+  //     console.error('Error sending message:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: error instanceof Error ? error.message : "Failed to send message",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
-  const handleReaction = async (messageId: string, emoji: string) => {
-    try {
-      console.log('Adding reaction:', messageId, emoji);
-      await addReaction(messageId, emoji);
-      // In a real app, this would update via websocket
-      toast({
-        title: "Reaction added",
-        description: `Added ${emoji} reaction`,
-      });
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add reaction",
-        variant: "destructive",
-      });
-    }
-  };
+  // const handleReaction = async (messageId: string, emoji: string) => {
+  //   try {
+  //     console.log('Adding reaction:', messageId, emoji);
+  //     await addReaction(messageId, emoji);
+  //     // In a real app, this would update via websocket
+  //     toast({
+  //       title: "Reaction added",
+  //       description: `Added ${emoji} reaction`,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error adding reaction:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: error instanceof Error ? error.message : "Failed to add reaction",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();

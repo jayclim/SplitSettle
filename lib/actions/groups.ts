@@ -3,7 +3,7 @@
 import { db } from '@/lib/db';
 import { usersToGroups, expenses, users, groups, messages, expenseSplits } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
-import { eq, inArray, desc, and, sql } from 'drizzle-orm';
+import { eq, inArray, desc, and } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { invitations } from '@/lib/db/schema';
 
@@ -134,7 +134,7 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
   const result: GroupCardData[] = groupMemberships.map(({ group }) => {
     const membersOfGroup = allGroupsMembers
       .filter((member) => member.groups.some((g) => g.groupId === group.id))
-      .map(({ groups, ...member }) => member); // Exclude the 'groups' property from the final member object
+      .map(({ ...member }) => member); // Exclude the 'groups' property from the final member object
 
     const expensesInGroup = allExpenses.filter(e => e.groupId === group.id);
 

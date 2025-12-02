@@ -1,16 +1,26 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Separator } from './ui/separator';
-import { CreditCard, Smartphone, Banknote, Building, ExternalLink, Check, ArrowRight } from 'lucide-react';
+import { CreditCard, Smartphone, Banknote, Building, ArrowRight, Check, ExternalLink } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createSettlement, CreateSettlementData } from '@/api/balances';
+import { createSettlement } from '@/api/balances';
 import { useToast } from '@/hooks/useToast';
 
 interface SettleUpModalProps {
@@ -133,7 +143,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
 
   const selectedMethodData = paymentMethods.find(m => m.id === selectedMethod);
   const watchedAmount = watch('amount');
-  const watchedNotes = watch('notes');
+  // const watchedNotes = watch('notes');
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -305,13 +315,13 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
                       <span className="text-muted-foreground">To:</span>
                       <span className="font-medium">{balance.userName}</span>
                     </div>
-                    {watchedNotes && (
-                      <div className="pt-2 border-t">
-                        <p className="text-sm text-muted-foreground">Note:</p>
-                        <p className="text-sm">{watchedNotes}</p>
-                      </div>
-                    )}
-                  </CardContent>
+                   <div className="text-center py-8">
+                <Check className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">All Settled!</h3>
+                <p className="text-muted-foreground">
+                  You&apos;re all settled up!
+                </p>
+              </div>    </CardContent>
                 </Card>
 
                 {selectedMethod === 'venmo' && (
@@ -319,7 +329,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
                     <CardContent className="p-4">
                       <div className="flex items-center space-x-2 text-blue-700">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">You'll be redirected to Venmo to complete the payment</span>
+                  You&apos;ll be redirected to Venmo to complete the payment
                       </div>
                     </CardContent>
                   </Card>
