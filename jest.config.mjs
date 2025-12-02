@@ -26,6 +26,7 @@ const customJestConfig = {
     '!**/node_modules/**',
     '!**/.next/**',
   ],
+  verbose: true,
 }
 
 export default createJestConfig(customJestConfig)
