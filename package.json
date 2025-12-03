@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:test": "dotenv -e .env.test.local -- next dev --turbopack",
+    "dev:test": "dotenv -e .env.test.local -- next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,7 +18,7 @@
     "test:seed": "dotenv -e .env.test.local -- tsx scripts/seed-test-data.ts",
     "test:clean": "dotenv -e .env.test.local -- tsx scripts/clean-test-data.ts",
     "test:reset": "npm run test:clean && npm run test:setup",
-    "test": "dotenv -e .env.test.local -- jest --config=jest.config.mjs",
+    "test": "dotenv -e .env.test.local -- jest --config=jest.config.mjs --runInBand",
     "test:watch": "dotenv -e .env.test.local -- jest --config=jest.config.mjs --watch",
     "db:drop": "dotenv -e .env.local -- tsx scripts/drop-tables.ts",
     "test:db:drop": "dotenv -e .env.test.local -- tsx scripts/drop-tables.ts"

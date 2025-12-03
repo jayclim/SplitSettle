@@ -195,6 +195,30 @@ async function seedTestData() {
       { expenseId: ol_e2.id, userId: charlie.id, amount: '11.00' }, { expenseId: ol_e2.id, userId: frank.id, amount: '11.00' },
     ]);
 
+    // --- Project X (Unequal Splits Feature Test) ---
+    const [projectX] = await db.insert(groups).values({ name: 'Project X', description: 'Secret unequal splitting project' }).returning();
+    await db.insert(usersToGroups).values([
+      { userId: alice.id, groupId: projectX.id, role: 'admin' },
+      { userId: bob.id, groupId: projectX.id, role: 'member' },
+      { userId: charlie.id, groupId: projectX.id, role: 'member' },
+    ]);
+
+    // Expense 1: Unequal split (Alice 10, Bob 20, Charlie 70)
+    const [px_e1] = await db.insert(expenses).values({
+      groupId: projectX.id,
+      description: 'Unequal Split Test',
+      amount: '100.00',
+      paidById: alice.id,
+      date: new Date(),
+      category: 'other'
+    }).returning();
+
+    await db.insert(expenseSplits).values([
+      { expenseId: px_e1.id, userId: alice.id, amount: '10.00' },
+      { expenseId: px_e1.id, userId: bob.id, amount: '20.00' },
+      { expenseId: px_e1.id, userId: charlie.id, amount: '70.00' },
+    ]);
+
     console.log('🎉 Test data seeding completed!');
 
   } catch (error) {

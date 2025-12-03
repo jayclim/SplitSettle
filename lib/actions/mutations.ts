@@ -97,13 +97,23 @@ export async function createExpenseAction(data: CreateExpenseData) {
     // Create splits
     // Currently only handling 'equal' split type for simplicity, as per original mock
     // In a real app, we'd handle other split types here
-    const splitAmount = data.amount / data.splitBetween.length;
+    let splitsToInsert;
 
-    const splitsToInsert = data.splitBetween.map(userId => ({
-      expenseId: newExpense.id,
-      userId: userId,
-      amount: splitAmount.toString(),
-    }));
+    if (data.splitType === 'custom' && data.customSplits) {
+      splitsToInsert = data.customSplits.map(split => ({
+        expenseId: newExpense.id,
+        userId: split.userId,
+        amount: split.amount.toString(),
+      }));
+    } else {
+      // Default to equal split
+      const splitAmount = data.amount / data.splitBetween.length;
+      splitsToInsert = data.splitBetween.map(userId => ({
+        expenseId: newExpense.id,
+        userId: userId,
+        amount: splitAmount.toString(),
+      }));
+    }
 
     if (splitsToInsert.length > 0) {
       await db.insert(expenseSplits).values(splitsToInsert);
