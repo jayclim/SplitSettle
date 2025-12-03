@@ -87,7 +87,7 @@ export function LandingPage() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 max-w-4xl mx-auto leading-[1.1] animate-in fade-in slide-in-from-bottom-8 duration-700">
-            Split expenses as easily as <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">texting your friends.</span>
+            Split expenses as easily as <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 selection:text-white selection:bg-blue-600">texting your friends.</span>
           </h1>
           
           <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
@@ -224,55 +224,74 @@ export function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[400px]">
+            <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[450px]">
               <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-4">Intuitive Chat Interface</h3>
-                <p className="text-slate-500 mb-8">Add expenses naturally as you chat. No clunky forms.</p>
+                <h3 className="text-2xl font-bold mb-4">Clear Balance Tracking</h3>
+                <p className="text-slate-500 mb-8">Know exactly who owes what at a glance.</p>
               </div>
-              <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
-                <div className="space-y-4">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100"></div>
-                    <div className="bg-slate-100 rounded-2xl rounded-tl-none p-3 text-sm w-2/3">
-                      Paid $60 for groceries 🛒
+              <div className="absolute bottom-0 right-0 w-3/4 h-[65%] bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-xs">A</div>
+                      <span className="font-medium text-sm">Alice</span>
                     </div>
+                    <span className="text-green-600 font-medium text-sm">owes you $15.00</span>
                   </div>
-                  <div className="flex gap-3 flex-row-reverse">
-                    <div className="w-8 h-8 rounded-full bg-purple-100"></div>
-                    <div className="bg-blue-600 text-white rounded-2xl rounded-tr-none p-3 text-sm">
-                      Got it! Split 3 ways?
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-xs">B</div>
+                      <span className="font-medium text-sm">Bob</span>
                     </div>
+                    <span className="text-red-600 font-medium text-sm">you owe $32.50</span>
+                  </div>
+                   <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">C</div>
+                      <span className="font-medium text-sm">Charlie</span>
+                    </div>
+                    <span className="text-slate-400 font-medium text-sm">settled up</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[400px]">
+            <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 overflow-hidden relative min-h-[450px]">
               <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-4">What Our Users Say</h3>
-                <p className="text-slate-500 mb-8">Hear from people who love Divvy.</p>
+                <h3 className="text-2xl font-bold mb-4">Flexible Membership</h3>
+                <p className="text-slate-500 mb-8">Add real users or &apos;ghost&apos; users for friends without accounts.</p>
               </div>
-              <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-white rounded-xl shadow-sm border">
-                    <p className="text-gray-600 mb-4">&quot;Divvy has completely changed how we manage our apartment expenses. No more awkward conversations about money!&quot;</p>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-                      <div>
-                        <p className="font-semibold">Sarah J.</p>
-                        <p className="text-sm text-gray-500">Roommate</p>
+              <div className="absolute bottom-0 right-0 w-3/4 h-[65%] bg-white rounded-tl-3xl shadow-xl border border-slate-100 p-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">Y</div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">You</span>
+                        <span className="text-[10px] text-slate-400">Admin</span>
                       </div>
                     </div>
+                    <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-medium rounded-full">Connected</span>
                   </div>
-                  <div className="p-4 bg-white rounded-xl shadow-sm border">
-                    <p className="text-gray-600 mb-4">&quot;The best way to keep track of shared costs during trips. Highly recommended for any group travel.&quot;</p>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-                      <div>
-                        <p className="font-semibold">Mike T.</p>
-                        <p className="text-sm text-gray-500">Traveler</p>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                     <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">S</div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Sarah</span>
+                        <span className="text-[10px] text-slate-400">Roommate</span>
                       </div>
                     </div>
+                    <span className="px-2 py-1 bg-purple-50 text-purple-600 text-[10px] font-medium rounded-full">Ghost User</span>
+                  </div>
+                   <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                     <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">M</div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Mike</span>
+                        <span className="text-[10px] text-slate-400">Friend</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-medium rounded-full">Invited</span>
                   </div>
                 </div>
               </div>
