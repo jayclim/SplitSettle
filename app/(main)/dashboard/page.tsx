@@ -80,6 +80,45 @@ export default function Dashboard() {
 
   const balance = formatBalance(totalBalance);
 
+  const renderInvitationsDialog = () => (
+    <Dialog open={invitesOpen} onOpenChange={setInvitesOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="relative">
+          <Mail className="h-4 w-4 mr-2" />
+          Invites
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+            {pendingInvites.length}
+          </span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Pending Invitations</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {pendingInvites.map((invite) => (
+            <div key={invite.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-1">
+                <p className="font-medium">Join &quot;{invite.group.name}&quot;</p>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <span>Invited by {invite.invitedBy.name}</span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button size="sm" variant="outline" onClick={() => handleRespondToInvite(invite.id, false)}>
+                  Decline
+                </Button>
+                <Button size="sm" onClick={() => handleRespondToInvite(invite.id, true)}>
+                  Accept
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -113,7 +152,8 @@ export default function Dashboard() {
               <p className="text-muted-foreground mb-4">
                 You haven&apos;t joined any groups yet. Create a new group or join an existing one to start splitting expenses!
               </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          {pendingInvites.length > 0 && renderInvitationsDialog()}
           <CreateGroupModal onGroupCreated={handleGroupUpdate} />
           {/* <JoinGroupModal onGroupJoined={handleGroupUpdate} /> */}
         </div>
@@ -131,44 +171,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex space-x-3">
-          {pendingInvites.length > 0 && (
-            <Dialog open={invitesOpen} onOpenChange={setInvitesOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="relative">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Invites
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                    {pendingInvites.length}
-                  </span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Pending Invitations</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {pendingInvites.map((invite) => (
-                    <div key={invite.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">Join &quot;{invite.group.name}&quot;</p>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <span>Invited by {invite.invitedBy.name}</span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => handleRespondToInvite(invite.id, false)}>
-                          Decline
-                        </Button>
-                        <Button size="sm" onClick={() => handleRespondToInvite(invite.id, true)}>
-                          Accept
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+          {pendingInvites.length > 0 && renderInvitationsDialog()}
           {/* <JoinGroupModal onGroupJoined={handleGroupUpdate} /> */}
           <CreateGroupModal onGroupCreated={handleGroupUpdate} />
         </div>
