@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { groups, usersToGroups, expenses, expenseSplits } from '@/lib/db/schema';
+import { groups, usersToGroups, expenses, expenseSplits, settlements } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { syncUser } from '@/lib/auth/sync';
 import { revalidatePath } from 'next/cache';
@@ -135,4 +135,59 @@ export async function joinGroupAction(code: string) {
   // We might need to add an 'inviteCode' to the groups table or a separate invites table
   console.log("Joining with code:", code);
   throw new Error("Join by code not yet implemented");
+}
+
+export type CreateSettlementData = {
+  groupId: string;
+  payeeId: string;
+  amount: number;
+  method?: string;
+  notes?: string;
+};
+
+export async function createSettlementAction(data: CreateSettlementData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const user = await syncUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const groupIdNum = parseInt(data.groupId);
+  if (isNaN(groupIdNum)) {
+    throw new Error('Invalid group ID');
+  }
+
+  try {
+    // Verify membership
+    const membership = await db.query.usersToGroups.findFirst({
+      where: (usersToGroups, { and, eq }) => and(
+        eq(usersToGroups.userId, user.id),
+        eq(usersToGroups.groupId, groupIdNum)
+      ),
+    });
+
+    if (!membership) {
+      throw new Error('You are not a member of this group');
+    }
+
+    // Create settlement
+    // Note: In the schema, settlements table has payerId and payeeId
+    // The current user is the payer
+    const [newSettlement] = await db.insert(settlements).values({
+      groupId: groupIdNum,
+      payerId: user.id,
+      payeeId: data.payeeId,
+      amount: data.amount.toString(),
+      // method: data.method, // Schema doesn't have method or notes yet, ignoring for now or need to update schema
+      // notes: data.notes,
+    }).returning();
+
+    revalidatePath(`/groups/${data.groupId}`);
+    revalidatePath('/dashboard');
+
+    return { success: true, settlement: newSettlement };
+  } catch (error) {
+    console.error('Error creating settlement:', error);
+    throw new Error('Failed to create settlement');
+  }
 }

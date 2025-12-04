@@ -20,7 +20,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { CreditCard, Smartphone, Banknote, Building, ArrowRight, Check, ExternalLink } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createSettlement } from '@/api/balances';
+import { createSettlementAction } from '@/lib/actions/mutations';
 import { useToast } from '@/hooks/useToast';
 
 interface SettleUpModalProps {
@@ -63,19 +63,21 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
       description: 'Send money instantly',
       icon: <Smartphone className="h-6 w-6" />,
       color: 'bg-blue-500',
-      popular: true
+      popular: true,
+      disabled: true
     },
     {
       id: 'paypal',
       name: 'PayPal',
       description: 'Secure online payments',
       icon: <CreditCard className="h-6 w-6" />,
-      color: 'bg-blue-600'
+      color: 'bg-blue-600',
+      disabled: true
     },
     {
       id: 'cash',
-      name: 'Cash',
-      description: 'Pay in person',
+      name: 'Cash/Other',
+      description: 'Pay in person or other method',
       icon: <Banknote className="h-6 w-6" />,
       color: 'bg-green-600'
     },
@@ -84,7 +86,8 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
       name: 'Bank Transfer',
       description: 'Direct bank transfer',
       icon: <Building className="h-6 w-6" />,
-      color: 'bg-slate-600'
+      color: 'bg-slate-600',
+      disabled: true
     }
   ];
 
@@ -107,17 +110,17 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
     try {
       setLoading(true);
       console.log('Creating settlement:', data);
-      await createSettlement({
+      await createSettlementAction({
         groupId,
-        toUserId: balance.userId,
+        payeeId: balance.userId,
         amount: data.amount,
         method: data.method,
         notes: data.notes
       });
       
       toast({
-        title: "Settlement created!",
-        description: `Payment request sent to ${balance.userName}`,
+        title: "Settlement recorded!",
+        description: `Payment to ${balance.userName} has been recorded.`,
       });
       
       handleClose();
@@ -189,28 +192,37 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
             {paymentMethods.map((method) => (
               <Card
                 key={method.id}
-                className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-300"
-                onClick={() => handleMethodSelect(method.id)}
+                className={`cursor-pointer transition-all duration-200 ${
+                  method.disabled 
+                    ? 'opacity-50 cursor-not-allowed bg-slate-50' 
+                    : 'hover:shadow-md hover:border-blue-300'
+                }`}
+                onClick={() => !method.disabled && handleMethodSelect(method.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 ${method.color} rounded-lg flex items-center justify-center text-white`}>
+                      <div className={`w-10 h-10 ${method.disabled ? 'bg-slate-400' : method.color} rounded-lg flex items-center justify-center text-white`}>
                         {method.icon}
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
                           <p className="font-medium">{method.name}</p>
-                          {method.popular && (
+                          {method.popular && !method.disabled && (
                             <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
                               Popular
+                            </Badge>
+                          )}
+                          {method.disabled && (
+                            <Badge variant="secondary" className="text-xs bg-slate-200 text-slate-600">
+                              Coming Soon
                             </Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{method.description}</p>
                       </div>
                     </div>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    {!method.disabled && <ArrowRight className="h-5 w-5 text-muted-foreground" />}
                   </div>
                 </CardContent>
               </Card>
@@ -309,7 +321,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Amount:</span>
-                      <span className="font-medium text-lg">${watchedAmount?.toFixed(2)}</span>
+                      <span className="font-medium text-lg">${(parseFloat(watchedAmount?.toString() || '0') || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">To:</span>
@@ -351,7 +363,7 @@ export function SettleUpModal({ open, onClose, balance, groupId, onSettlementCre
                 disabled={loading}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
               >
-                {loading ? 'Processing...' : step === 'details' ? 'Review Payment' : 'Send Payment Request'}
+                {loading ? 'Processing...' : step === 'details' ? 'Review Payment' : 'Settle Up'}
               </Button>
             </div>
           </form>

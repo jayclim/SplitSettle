@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { usersToGroups, expenses, users, groups, messages, expenseSplits } from '@/lib/db/schema';
+import { usersToGroups, expenses, users, groups, messages, expenseSplits, settlements } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { syncUser } from '@/lib/auth/sync';
 import { eq, inArray, desc, and } from 'drizzle-orm';
@@ -405,11 +405,17 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
     with: { splits: true },
   });
 
+  // Get all settlements for the group
+  const groupSettlements = await db.query.settlements.findMany({
+    where: eq(settlements.groupId, groupIdNum),
+  });
+
   // Calculate balances for each member
   const balances: Balance[] = groupMembers.map((member) => {
     let totalPaid = 0;
     let totalOwed = 0;
 
+    // Calculate expense-based balance
     for (const expense of groupExpenses) {
       if (expense.paidById === member.user.id) {
         totalPaid += parseFloat(expense.amount);
@@ -417,6 +423,30 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
       const userSplit = expense.splits.find(s => s.userId === member.user.id);
       if (userSplit) {
         totalOwed += parseFloat(userSplit.amount);
+      }
+    }
+
+    // Adjust for settlements
+    // If member paid in a settlement, they "paid" more (reduced debt)
+    // If member received a settlement, they "owed" more (reduced credit) - wait, this logic is for net balance
+    // Actually, for net balance:
+    // + Paid in expenses
+    // - Share of expenses
+    // + Paid in settlements (outflow) -> effectively increases their contribution to the group pot? No.
+    // Settlements are direct transfers. They don't change the group "balance" in terms of expense sharing,
+    // but they change the *debt* between users.
+    // So for the overall "balance" (gets back / owes), we should probably adjust it.
+    // If I owe $10 and I pay $10 via settlement, my balance should be $0.
+    // So:
+    // + Paid Settlement -> Increases my "Paid" amount (or reduces my debt)
+    // - Received Settlement -> Increases my "Owed" amount (or reduces my credit)
+
+    for (const settlement of groupSettlements) {
+      if (settlement.payerId === member.user.id) {
+        totalPaid += parseFloat(settlement.amount);
+      }
+      if (settlement.payeeId === member.user.id) {
+        totalOwed += parseFloat(settlement.amount);
       }
     }
 
@@ -446,6 +476,19 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
         if (expense.paidById === member.user.id && otherSplit) {
           // Current member paid, other member owes their share
           otherOwesToMember += parseFloat(otherSplit.amount);
+        }
+      }
+
+      // Adjust for settlements between these two
+      for (const settlement of groupSettlements) {
+        // If member paid otherMember, it reduces what member owes to other
+        if (settlement.payerId === member.user.id && settlement.payeeId === otherMember.user.id) {
+          memberOwesToOther -= parseFloat(settlement.amount);
+        }
+
+        // If otherMember paid member, it reduces what other owes to member
+        if (settlement.payerId === otherMember.user.id && settlement.payeeId === member.user.id) {
+          otherOwesToMember -= parseFloat(settlement.amount);
         }
       }
 
