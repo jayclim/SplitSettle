@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
-import { Receipt, Calendar, DollarSign, Users, Plus } from 'lucide-react';
+import { Receipt, Calendar, DollarSign, Users, Plus, ArrowRightLeft, UserPlus, UserMinus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useGroupExpenses } from '@/hooks/useGroupDetails';
 
@@ -16,13 +16,16 @@ interface ExpenseHistoryProps {
 export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
   const { data: expensesData, isLoading: loading } = useGroupExpenses(groupId);
   const expenses = expensesData?.expenses || [];
-  const [filter, setFilter] = useState<'all' | 'settled' | 'unsettled'>('all');
+  const [filter, setFilter] = useState<'all' | 'expense' | 'payment' | 'log'>('all');
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   const getCategoryColor = (category?: string) => {
+    if (category === 'Payment') return 'bg-emerald-100 text-emerald-700';
+    if (category === 'Log') return 'bg-gray-100 text-gray-700';
+    
     const colors = {
       'Food': 'bg-orange-100 text-orange-700',
       'Transportation': 'bg-blue-100 text-blue-700',
@@ -35,9 +38,9 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
   };
 
   const filteredExpenses = expenses.filter(expense => {
-    if (filter === 'settled') return expense.settled;
-    if (filter === 'unsettled') return !expense.settled;
-    return true;
+    if (filter === 'all') return true;
+    if (filter === 'log') return expense.type === 'member_added' || expense.type === 'member_removed';
+    return expense.type === filter;
   });
 
   if (loading) {
@@ -54,7 +57,7 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
     <div className="space-y-4">
       {/* Filter Buttons */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Expense History</h3>
+        <h3 className="text-lg font-semibold">History</h3>
         <div className="flex space-x-2">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
@@ -64,18 +67,25 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
             All
           </Button>
           <Button
-            variant={filter === 'unsettled' ? 'default' : 'outline'}
+            variant={filter === 'expense' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter('unsettled')}
+            onClick={() => setFilter('expense')}
           >
-            Unsettled
+            Expenses
           </Button>
           <Button
-            variant={filter === 'settled' ? 'default' : 'outline'}
+            variant={filter === 'payment' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter('settled')}
+            onClick={() => setFilter('payment')}
           >
-            Settled
+            Payments
+          </Button>
+          <Button
+            variant={filter === 'log' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('log')}
+          >
+            Logs
           </Button>
           {onAddExpense && (
             <Button
@@ -96,7 +106,7 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
           <Card>
             <CardContent className="p-8 text-center">
               <Receipt className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">No expenses found</p>
+              <p className="text-muted-foreground">No activity found</p>
             </CardContent>
           </Card>
         ) : (
@@ -114,52 +124,85 @@ export function ExpenseHistory({ groupId, onAddExpense }: ExpenseHistoryProps) {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium truncate">{expense.description}</h4>
-                        {expense.category && (
-                          <Badge variant="secondary" className={`text-xs ${getCategoryColor(expense.category)}`}>
-                            {expense.category}
+                        <h4 className="font-medium truncate">
+                          {expense.type === 'member_added' || expense.type === 'member_removed' 
+                            ? `${expense.entityName} ${expense.description}` 
+                            : expense.description}
+                        </h4>
+                        {expense.type === 'payment' ? (
+                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                            Payment
                           </Badge>
+                        ) : expense.type === 'member_added' ? (
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                            Joined
+                          </Badge>
+                        ) : expense.type === 'member_removed' ? (
+                          <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
+                            Left
+                          </Badge>
+                        ) : (
+                          expense.category && (
+                            <Badge variant="secondary" className={`text-xs ${getCategoryColor(expense.category)}`}>
+                              {expense.category}
+                            </Badge>
+                          )
                         )}
                       </div>
                       
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <span className="flex items-center space-x-1">
-                          <DollarSign className="h-3 w-3" />
-                          <span>Paid by {expense.paidBy.name}</span>
+                          {expense.type === 'payment' ? <ArrowRightLeft className="h-3 w-3" /> : 
+                           expense.type === 'member_added' ? <UserPlus className="h-3 w-3" /> :
+                           expense.type === 'member_removed' ? <UserMinus className="h-3 w-3" /> :
+                           <DollarSign className="h-3 w-3" />}
+                          <span>
+                            {expense.type === 'payment' 
+                              ? `${expense.paidBy.name} paid ${expense.splitBetween[0].name}`
+                              : expense.type === 'member_added' || expense.type === 'member_removed'
+                              ? `Action by ${expense.actorName || expense.paidBy.name}`
+                              : `Paid by ${expense.paidBy.name}`
+                            }
+                          </span>
                         </span>
-                        <span className="flex items-center space-x-1">
-                          <Users className="h-3 w-3" />
-                          <span>{expense.splitBetween.length} people</span>
-                        </span>
+                        {expense.type === 'expense' && (
+                          <span className="flex items-center space-x-1">
+                            <Users className="h-3 w-3" />
+                            <span>{expense.splitBetween.length} people</span>
+                          </span>
+                        )}
                         <span className="flex items-center space-x-1">
                           <Calendar className="h-3 w-3" />
                           <span>{formatDistanceToNow(new Date(expense.createdAt), { addSuffix: true })}</span>
                         </span>
                       </div>
 
-                      {/* Split Details */}
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {expense.splitBetween.slice(0, 3).map((split) => (
-                          <Badge key={split._id} variant="outline" className="text-xs">
-                            {split.name}: ${split.amount.toFixed(2)}
-                          </Badge>
-                        ))}
-                        {expense.splitBetween.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{expense.splitBetween.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
+                      {/* Split Details (only for expenses) */}
+                      {expense.type === 'expense' && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {expense.splitBetween.slice(0, 3).map((split) => (
+                            <Badge key={split._id} variant="outline" className="text-xs">
+                              {split.name}: ${split.amount.toFixed(2)}
+                            </Badge>
+                          ))}
+                          {expense.splitBetween.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{expense.splitBetween.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end space-y-2">
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">${expense.amount.toFixed(2)}</p>
-                      <Badge variant={expense.settled ? 'default' : 'secondary'} className="text-xs">
-                        {expense.settled ? 'Settled' : 'Pending'}
-                      </Badge>
-                    </div>
+                    {expense.type !== 'member_added' && expense.type !== 'member_removed' && (
+                      <div className="text-right">
+                        <p className={`text-lg font-semibold ${expense.type === 'payment' ? 'text-emerald-600' : ''}`}>
+                          ${expense.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                     
                     {expense.receipt && (
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

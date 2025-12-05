@@ -1,16 +1,16 @@
 import { randomUUID } from 'crypto';
 import { db } from '../lib/db';
-import { users, groups, usersToGroups, expenses, expenseSplits } from '../lib/db/schema';
+import { users, groups, usersToGroups, expenses, expenseSplits, settlements, activityLogs } from '../lib/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { createClerkClient } from '@clerk/backend';
+// import { createClerkClient } from '@clerk/backend'; // Removed top-level import
 import { config } from 'dotenv';
 
 // Load env vars for standalone script execution
-config({ path: '.env.test.local' });
+// config({ path: '.env.test.local' }); // Commented out to allow dotenv-cli to control the environment
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+// const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY }); // Removed top-level init
 
-async function seedTestData() {
+async function seedTestData(skipClerk = false) {
   console.log('🌱 Seeding test data...');
 
   try {
@@ -28,29 +28,38 @@ async function seedTestData() {
     for (const user of testUsers) {
       let clerkUserId: string;
 
-      // 1. Check/Create in Clerk
-      try {
-        const clerkUserList = await clerk.users.getUserList({ emailAddress: [user.email], limit: 1 });
+      if (!skipClerk) {
+        // 1. Check/Create in Clerk
+        try {
+          const { createClerkClient } = await import('@clerk/backend');
+          const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-        if (clerkUserList.data.length > 0) {
-          clerkUserId = clerkUserList.data[0].id;
-          console.log(`ℹ️  Clerk user ${user.email} already exists (${clerkUserId}).`);
-        } else {
-          console.log(`Creating Clerk user: ${user.email}`);
-          const newClerkUser = await clerk.users.createUser({
-            emailAddress: [user.email],
-            password: user.password,
-            firstName: user.name.split(' ')[0],
-            lastName: user.name.split(' ').slice(1).join(' '),
-            skipPasswordChecks: true,
-            skipPasswordRequirement: true,
-          });
-          clerkUserId = newClerkUser.id;
-          console.log(`✅ Created Clerk user: ${user.email} (${clerkUserId})`);
+          const clerkUserList = await clerk.users.getUserList({ emailAddress: [user.email], limit: 1 });
+
+          if (clerkUserList.data.length > 0) {
+            clerkUserId = clerkUserList.data[0].id;
+            console.log(`ℹ️  Clerk user ${user.email} already exists (${clerkUserId}).`);
+          } else {
+            console.log(`Creating Clerk user: ${user.email}`);
+            const newClerkUser = await clerk.users.createUser({
+              emailAddress: [user.email],
+              password: user.password,
+              firstName: user.name.split(' ')[0],
+              lastName: user.name.split(' ').slice(1).join(' '),
+              skipPasswordChecks: true,
+              skipPasswordRequirement: true,
+            });
+            clerkUserId = newClerkUser.id;
+            console.log(`✅ Created Clerk user: ${user.email} (${clerkUserId})`);
+          }
+        } catch (error) {
+          console.error(`❌ Failed to manage Clerk user ${user.email}:`, error);
+          continue; // Skip to next user if Clerk fails
         }
-      } catch (error) {
-        console.error(`❌ Failed to manage Clerk user ${user.email}:`, error);
-        continue; // Skip to next user if Clerk fails
+      } else {
+        // Generate random ID for local DB if skipping Clerk
+        clerkUserId = `user_${randomUUID()}`;
+        console.log(`ℹ️  Skipping Clerk for ${user.email}, using mock ID: ${clerkUserId}`);
       }
 
       // 2. Create/Update in Local DB
@@ -93,6 +102,8 @@ async function seedTestData() {
 
     // 2. Create groups and memberships
     console.log('🧹 Clearing old group data...');
+    await db.delete(activityLogs);
+    await db.delete(settlements);
     await db.delete(expenseSplits);
     await db.delete(expenses);
     await db.delete(usersToGroups);
@@ -219,15 +230,33 @@ async function seedTestData() {
       { expenseId: px_e1.id, userId: charlie.id, amount: '70.00' },
     ]);
 
-    console.log('🎉 Test data seeding completed!');
+    // 4. Add Settlements
+    console.log('🤝 Seeding settlements...');
+    await db.insert(settlements).values([
+      { groupId: weekendTrip.id, payerId: alice.id, payeeId: bob.id, amount: '50.00', date: new Date() },
+    ]);
 
+    // 5. Add Activity Logs
+    console.log('📜 Seeding activity logs...');
+    await db.insert(activityLogs).values([
+      { groupId: weekendTrip.id, action: 'member_added', entityId: alice.id, actorId: alice.id, createdAt: new Date(Date.now() - 10000000) },
+      { groupId: weekendTrip.id, action: 'member_added', entityId: bob.id, actorId: alice.id, createdAt: new Date(Date.now() - 9000000) },
+      { groupId: weekendTrip.id, action: 'member_added', entityId: charlie.id, actorId: alice.id, createdAt: new Date(Date.now() - 8000000) },
+    ]);
+
+    console.log('🎉 Test data seeding completed!');
   } catch (error) {
     console.error('❌ Error seeding test data:', error);
     process.exit(1);
-  } finally {
-    console.log('👋 Exiting...');
-    process.exit(0);
   }
 }
 
-seedTestData();
+// Only run if this file is the entry point
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedTestData().then(() => {
+    console.log('👋 Exiting...');
+    process.exit(0);
+  });
+}
+
+export { seedTestData };

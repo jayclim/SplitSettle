@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from './ui/dialog';
+import { useUser } from '@clerk/nextjs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -9,7 +10,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Settings, Users, Trash2, UserMinus, Crown, Mail, Ghost } from 'lucide-react';
 import { Group } from '@/api/groups';
-import { createGhostMember, inviteMember } from '@/lib/actions/groups';
+import { createGhostMember, inviteMember, removeMember } from '@/lib/actions/groups';
 import { useToast } from '@/hooks/useToast';
 
 interface GroupSettingsModalProps {
@@ -24,7 +25,12 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
   const [ghostName, setGhostName] = useState('');
   const [activeTab, setActiveTab] = useState("info");
   const [addMemberMode, setAddMemberMode] = useState<'email' | 'ghost'>('email');
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useUser();
+
+  const currentUserRole = group.members.find(m => m._id === user?.id)?.role;
+  const isAdmin = currentUserRole === 'admin';
 
   console.log('Active Tab:', activeTab);
 
@@ -32,21 +38,22 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
     try {
       setLoading(true);
-      // Mock API call
-      console.log('Removing member:', memberId);
+      await removeMember(group._id, memberToRemove);
       toast({
         title: "Member removed",
         description: "Member has been removed from the group.",
       });
+      setMemberToRemove(null);
       onGroupUpdated();
     } catch (error) {
       console.error(error);
       toast({
         title: "Error",
-        description: "Failed to remove member",
+        description: error instanceof Error ? error.message : "Failed to remove member",
         variant: "destructive",
       });
     } finally {
@@ -295,15 +302,17 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
                              </DialogContent>
                            </Dialog>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRemoveMember(member._id)}
-                          disabled={loading}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <UserMinus className="h-4 w-4" />
-                        </Button>
+                        {isAdmin && member.role !== 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setMemberToRemove(member._id)}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -387,24 +396,50 @@ export function GroupSettingsModal({ group, onGroupUpdated }: GroupSettingsModal
                     </div>
                   </div>
 
-                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-red-800">Delete Group</p>
-                        <p className="text-sm text-red-600">This action cannot be undone</p>
+                  {isAdmin && (
+                    <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-red-800">Delete Group</p>
+                          <p className="text-sm text-red-600">This action cannot be undone</p>
+                        </div>
+                        <Button variant="destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Group
+                        </Button>
                       </div>
-                      <Button variant="destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Group
-                      </Button>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
           )}
         </div>
       </DialogContent>
+
+      <Dialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Remove Member
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this member? They will be removed from the group, but their expense history will be preserved as "Removed User".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="button" variant="destructive" onClick={confirmRemoveMember} disabled={loading}>
+              {loading ? "Removing..." : "Remove Member"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

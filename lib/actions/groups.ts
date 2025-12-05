@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { usersToGroups, expenses, users, groups, messages, expenseSplits, settlements } from '@/lib/db/schema';
+import { usersToGroups, expenses, users, groups, messages, expenseSplits, settlements, activityLogs } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { syncUser } from '@/lib/auth/sync';
 import { eq, inArray, desc, and } from 'drizzle-orm';
@@ -131,6 +131,22 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
     with: { splits: true },
   });
 
+  const allSettlements = await db.query.settlements.findMany({
+    where: inArray(settlements.groupId, groupIds),
+    with: {
+      payer: { columns: { name: true } },
+      payee: { columns: { name: true } },
+    }
+  });
+
+  const allLogs = await db.query.activityLogs.findMany({
+    where: inArray(activityLogs.groupId, groupIds),
+    with: {
+      entity: { columns: { name: true } },
+      actor: { columns: { name: true } },
+    }
+  });
+
   const result: GroupCardData[] = groupMemberships.map(({ group }) => {
     const membersOfGroup = allGroupsMembers
       .filter((member) => member.groups.some((g) => g.groupId === group.id))
@@ -156,6 +172,40 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
 
     const recentExpense = expensesInGroup.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 
+    // Get recent settlement
+    const settlementsInGroup = allSettlements.filter(s => s.groupId === group.id);
+    const recentSettlement = settlementsInGroup.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+
+    // Get recent log
+    const logsInGroup = allLogs.filter(l => l.groupId === group.id);
+    const recentLog = logsInGroup.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+
+    // Determine the most recent activity
+    let recentActivity = 'No recent activity';
+    let recentDate = new Date(0);
+
+    if (recentExpense && recentExpense.date > recentDate) {
+      recentDate = recentExpense.date;
+      recentActivity = recentExpense.description;
+    }
+
+    if (recentSettlement && recentSettlement.date > recentDate) {
+      recentDate = recentSettlement.date;
+      const payerName = recentSettlement.payer?.name || 'Unknown';
+      const payeeName = recentSettlement.payee?.name || 'Unknown';
+      recentActivity = `${payerName} paid ${payeeName}`;
+    }
+
+    if (recentLog && recentLog.createdAt > recentDate) {
+      recentDate = recentLog.createdAt;
+      const entityName = recentLog.entity?.name || 'Unknown';
+      if (recentLog.action === 'member_added') {
+        recentActivity = `${entityName} joined the group`;
+      } else if (recentLog.action === 'member_removed') {
+        recentActivity = `${entityName} left the group`;
+      }
+    }
+
     return {
       id: group.id,
       name: group.name,
@@ -163,7 +213,7 @@ export async function getGroupsForUser(): Promise<GroupCardData[]> {
       members: membersOfGroup,
       balance: balance,
       unreadCount: 0, // Mock
-      recentActivity: recentExpense ? recentExpense.description : 'No recent activity',
+      recentActivity: recentActivity,
     };
   });
 
@@ -235,16 +285,31 @@ export async function getGroup(groupId: string): Promise<{ group: GroupDetail }>
     with: { splits: true },
   });
 
+  // Get current member IDs (we already fetched groupMembers, so we can use that)
+  const currentMemberIds = new Set(groupMembers.map(m => m.user.id));
+
   let totalPaidByUser = 0;
   let totalUserShare = 0;
 
   for (const expense of groupExpenses) {
-    if (expense.paidById === user.id) {
-      totalPaidByUser += parseFloat(expense.amount);
+    // Only count if payer is a current member
+    if (currentMemberIds.has(expense.paidById)) {
+      if (expense.paidById === user.id) {
+        // Sum up splits for CURRENT members only
+        expense.splits.forEach(split => {
+          if (currentMemberIds.has(split.userId)) {
+            totalPaidByUser += parseFloat(split.amount);
+          }
+        });
+      }
     }
+
     const userSplit = expense.splits.find(s => s.userId === user.id);
     if (userSplit) {
-      totalUserShare += parseFloat(userSplit.amount);
+      // Only count debt if the payer is a CURRENT member
+      if (currentMemberIds.has(expense.paidById)) {
+        totalUserShare += parseFloat(userSplit.amount);
+      }
     }
   }
 
@@ -410,6 +475,13 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
     where: eq(settlements.groupId, groupIdNum),
   });
 
+  // Get all current members of the group
+  const currentMembers = await db.query.usersToGroups.findMany({
+    where: eq(usersToGroups.groupId, groupIdNum),
+    columns: { userId: true },
+  });
+  const currentMemberIds = new Set(currentMembers.map(m => m.userId));
+
   // Calculate balances for each member
   const balances: Balance[] = groupMembers.map((member) => {
     let totalPaid = 0;
@@ -417,36 +489,39 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
 
     // Calculate expense-based balance
     for (const expense of groupExpenses) {
-      if (expense.paidById === member.user.id) {
-        totalPaid += parseFloat(expense.amount);
+      // Only count payments made by current members
+      if (currentMemberIds.has(expense.paidById)) {
+        // If I paid
+        if (expense.paidById === member.user.id) {
+          // Sum up splits for CURRENT members only
+          expense.splits.forEach(split => {
+            if (currentMemberIds.has(split.userId)) {
+              totalPaid += parseFloat(split.amount);
+            }
+          });
+        }
       }
+
+      // If I have a split
       const userSplit = expense.splits.find(s => s.userId === member.user.id);
       if (userSplit) {
-        totalOwed += parseFloat(userSplit.amount);
+        // Only count debt if the payer is a CURRENT member
+        if (currentMemberIds.has(expense.paidById)) {
+          totalOwed += parseFloat(userSplit.amount);
+        }
       }
     }
 
     // Adjust for settlements
-    // If member paid in a settlement, they "paid" more (reduced debt)
-    // If member received a settlement, they "owed" more (reduced credit) - wait, this logic is for net balance
-    // Actually, for net balance:
-    // + Paid in expenses
-    // - Share of expenses
-    // + Paid in settlements (outflow) -> effectively increases their contribution to the group pot? No.
-    // Settlements are direct transfers. They don't change the group "balance" in terms of expense sharing,
-    // but they change the *debt* between users.
-    // So for the overall "balance" (gets back / owes), we should probably adjust it.
-    // If I owe $10 and I pay $10 via settlement, my balance should be $0.
-    // So:
-    // + Paid Settlement -> Increases my "Paid" amount (or reduces my debt)
-    // - Received Settlement -> Increases my "Owed" amount (or reduces my credit)
-
     for (const settlement of groupSettlements) {
-      if (settlement.payerId === member.user.id) {
-        totalPaid += parseFloat(settlement.amount);
-      }
-      if (settlement.payeeId === member.user.id) {
-        totalOwed += parseFloat(settlement.amount);
+      // Only consider settlements between current members
+      if (currentMemberIds.has(settlement.payerId) && currentMemberIds.has(settlement.payeeId)) {
+        if (settlement.payerId === member.user.id) {
+          totalPaid += parseFloat(settlement.amount);
+        }
+        if (settlement.payeeId === member.user.id) {
+          totalOwed += parseFloat(settlement.amount);
+        }
       }
     }
 
@@ -467,6 +542,10 @@ export async function getBalances(groupId: string): Promise<{ balances: Balance[
       for (const expense of groupExpenses) {
         const memberSplit = expense.splits.find(s => s.userId === member.user.id);
         const otherSplit = expense.splits.find(s => s.userId === otherMember.user.id);
+
+        // Only consider if payer is current (which they are, since we are iterating groupMembers which are current)
+        // But we should double check just in case groupMembers logic changes.
+        // Actually groupMembers comes from getGroupDetails which fetches current members.
 
         if (expense.paidById === otherMember.user.id && memberSplit) {
           // Other member paid, current member owes their share
@@ -617,6 +696,10 @@ export type Expense = {
   createdAt: string;
   receipt?: string;
   settled: boolean;
+  type: 'expense' | 'payment' | 'member_added' | 'member_removed';
+  // For logs
+  entityName?: string;
+  actorName?: string;
 };
 
 export async function getExpenses(groupId: string): Promise<{ expenses: Expense[] }> {
@@ -643,10 +726,16 @@ export async function getExpenses(groupId: string): Promise<{ expenses: Expense[
     throw new Error('Access denied: You are not a member of this group');
   }
 
+  // Get all current members of the group to check for removed users
+  const currentMembers = await db.query.usersToGroups.findMany({
+    where: eq(usersToGroups.groupId, groupIdNum),
+    columns: { userId: true },
+  });
+  const currentMemberIds = new Set(currentMembers.map(m => m.userId));
+
   // Get all expenses for the group
   const groupExpenses = await db.query.expenses.findMany({
     where: eq(expenses.groupId, groupIdNum),
-    orderBy: [desc(expenses.createdAt)],
     with: {
       paidBy: {
         columns: {
@@ -668,30 +757,132 @@ export async function getExpenses(groupId: string): Promise<{ expenses: Expense[
     },
   });
 
-  // Format expenses to match the expected interface
-  const formattedExpenses: Expense[] = groupExpenses.map((expense) => ({
-    _id: expense.id.toString(),
-    groupId: groupId,
-    description: expense.description,
-    amount: parseFloat(expense.amount),
-    paidBy: {
-      _id: expense.paidBy.id,
-      name: expense.paidBy.name || 'Unknown User',
-      avatar: expense.paidBy.avatarUrl || undefined,
+  // Get all settlements for the group
+  const groupSettlements = await db.query.settlements.findMany({
+    where: eq(settlements.groupId, groupIdNum),
+    with: {
+      payer: {
+        columns: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
+      payee: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
     },
-    splitBetween: expense.splits.map((split) => ({
-      _id: split.user.id,
-      name: split.user.name || 'Unknown User',
-      amount: parseFloat(split.amount),
-    })),
-    category: expense.category || undefined,
-    date: expense.date.toISOString(),
-    createdAt: expense.createdAt.toISOString(),
-    receipt: expense.receiptUrl || undefined,
-    settled: expense.settled,
-  }));
+  });
 
-  return { expenses: formattedExpenses };
+  // Get all activity logs for the group
+  const groupLogs = await db.query.activityLogs.findMany({
+    where: eq(activityLogs.groupId, groupIdNum),
+    with: {
+      entity: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+      actor: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  // Format expenses to match the expected interface
+  const formattedExpenses: Expense[] = groupExpenses.map((expense) => {
+    const isPayerMember = currentMemberIds.has(expense.paidBy.id);
+
+    return {
+      _id: expense.id.toString(),
+      groupId: groupId,
+      description: expense.description,
+      amount: parseFloat(expense.amount),
+      paidBy: {
+        _id: expense.paidBy.id,
+        name: isPayerMember ? (expense.paidBy.name || 'Unknown User') : 'Removed User',
+        avatar: isPayerMember ? (expense.paidBy.avatarUrl || undefined) : undefined,
+      },
+      splitBetween: expense.splits.map((split) => {
+        const isSplitMember = currentMemberIds.has(split.user.id);
+        return {
+          _id: split.user.id,
+          name: isSplitMember ? (split.user.name || 'Unknown User') : 'Removed User',
+          amount: parseFloat(split.amount),
+        };
+      }),
+      category: expense.category || undefined,
+      date: expense.date.toISOString(),
+      createdAt: expense.createdAt.toISOString(),
+      receipt: expense.receiptUrl || undefined,
+      settled: expense.settled,
+      type: 'expense',
+    };
+  });
+
+  // Format settlements as expenses
+  const formattedSettlements: Expense[] = groupSettlements.map((settlement) => {
+    const isPayerMember = currentMemberIds.has(settlement.payer.id);
+    const isPayeeMember = currentMemberIds.has(settlement.payee.id);
+
+    return {
+      _id: `settlement-${settlement.id}`,
+      groupId: groupId,
+      description: `Paid ${isPayeeMember ? (settlement.payee.name || 'Unknown User') : 'Removed User'}`,
+      amount: parseFloat(settlement.amount),
+      paidBy: {
+        _id: settlement.payer.id,
+        name: isPayerMember ? (settlement.payer.name || 'Unknown User') : 'Removed User',
+        avatar: isPayerMember ? (settlement.payer.avatarUrl || undefined) : undefined,
+      },
+      splitBetween: [{
+        _id: settlement.payee.id,
+        name: isPayeeMember ? (settlement.payee.name || 'Unknown User') : 'Removed User',
+        amount: parseFloat(settlement.amount),
+      }],
+      category: 'Payment',
+      date: settlement.date.toISOString(),
+      createdAt: settlement.createdAt.toISOString(),
+      settled: true,
+      type: 'payment',
+    };
+  });
+
+  // Format logs as expenses
+  const formattedLogs: Expense[] = groupLogs.map((log) => {
+    return {
+      _id: `log-${log.id}`,
+      groupId: groupId,
+      description: log.action === 'member_added' ? 'joined the group' : 'left the group',
+      amount: 0,
+      paidBy: {
+        _id: log.actorId,
+        name: log.actor.name || 'Unknown User',
+      },
+      splitBetween: [],
+      category: 'Log',
+      date: log.createdAt.toISOString(),
+      createdAt: log.createdAt.toISOString(),
+      settled: true,
+      type: log.action as 'member_added' | 'member_removed',
+      entityName: log.entity.name || 'Unknown User',
+      actorName: log.actor.name || 'Unknown User',
+    };
+  });
+
+  // Combine and sort by date descending
+  const allItems = [...formattedExpenses, ...formattedSettlements, ...formattedLogs].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+  return { expenses: allItems };
 }
 
 export async function createGroup(name: string, description?: string, coverImageUrl?: string) {
@@ -758,6 +949,14 @@ export async function createGhostMember(groupId: string, name: string) {
     role: 'member',
   });
 
+  // Log activity
+  await db.insert(activityLogs).values({
+    groupId: groupIdNum,
+    action: 'member_added',
+    entityId: ghostUser.id,
+    actorId: user.id,
+  });
+
   return ghostUser;
 }
 
@@ -801,17 +1000,120 @@ export async function inviteMember(groupId: string, email: string, ghostUserId?:
     if (existingMembership) {
       throw new Error('User is already a member of this group');
     }
+
+    // Add user to group
+    await db.insert(usersToGroups).values({
+      userId: existingUser.id,
+      groupId: groupIdNum,
+      role: 'member',
+    });
+
+    // Log activity
+    await db.insert(activityLogs).values({
+      groupId: groupIdNum,
+      action: 'member_added',
+      entityId: existingUser.id,
+      actorId: user.id,
+    });
+
+    // If there was a ghost user, we might want to link/merge data here,
+    // but for now we just add the real user.
+    // TODO: Handle ghost user merging if ghostUserId is provided
+
+    return existingUser;
   }
 
-  // Create invitation
-  await db.insert(invitations).values({
+  // If user doesn't exist, create an invitation
+  // Check if invitation already exists
+  const existingInvitation = await db.query.invitations.findFirst({
+    where: and(
+      eq(invitations.groupId, groupIdNum),
+      eq(invitations.email, email),
+      eq(invitations.status, 'pending')
+    ),
+  });
+
+  if (existingInvitation) {
+    return existingInvitation; // Already invited
+  }
+
+  const [invitation] = await db.insert(invitations).values({
     groupId: groupIdNum,
     email,
     invitedById: user.id,
-    ghostUserId: ghostUserId, // Link to ghost user if provided
+    ghostUserId: ghostUserId,
     status: 'pending',
-  });
+  }).returning();
+
+  // In a real app, you would send an email here
+  console.log(`Invitation sent to ${email} for group ${groupId}`);
+
+  return invitation;
 }
+
+export async function removeMember(groupId: string, memberId: string) {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
+  const user = await syncUser();
+  if (!user) redirect('/sign-in');
+
+  const groupIdNum = parseInt(groupId);
+  if (isNaN(groupIdNum)) {
+    throw new Error('Invalid group ID');
+  }
+
+  // Verify requester is an admin of the group
+  const requesterMembership = await db.query.usersToGroups.findFirst({
+    where: and(
+      eq(usersToGroups.userId, user.id),
+      eq(usersToGroups.groupId, groupIdNum)
+    ),
+  });
+
+  if (!requesterMembership || requesterMembership.role !== 'admin') {
+    throw new Error('Access denied: Only admins can remove members');
+  }
+
+  // Prevent removing yourself (optional, but good practice to have a separate "leave group" flow or just allow it)
+  // For now, let's allow it, but if it's the last admin, that might be an issue.
+  // Let's just proceed with removal.
+
+  // Check if the member exists in the group
+  const memberToRemove = await db.query.usersToGroups.findFirst({
+    where: and(
+      eq(usersToGroups.userId, memberId),
+      eq(usersToGroups.groupId, groupIdNum)
+    ),
+  });
+
+  if (!memberToRemove) {
+    throw new Error('Member not found in this group');
+  }
+
+  if (memberToRemove.role === 'admin') {
+    throw new Error('Access denied: Cannot remove an admin');
+  }
+
+  // Remove the member
+  await db.delete(usersToGroups)
+    .where(and(
+      eq(usersToGroups.userId, memberId),
+      eq(usersToGroups.groupId, groupIdNum)
+    ));
+
+  // Log activity
+  await db.insert(activityLogs).values({
+    groupId: groupIdNum,
+    action: 'member_removed',
+    entityId: memberId,
+    actorId: user.id,
+  });
+
+  return { success: true };
+}
+
+
 
 export async function getPendingInvitations() {
   const { userId } = await auth();
@@ -901,6 +1203,14 @@ export async function respondToInvitation(invitationId: number, accept: boolean)
     await db.update(invitations)
       .set({ status: 'accepted' })
       .where(eq(invitations.id, invitationId));
+
+    // Log activity
+    await db.insert(activityLogs).values({
+      groupId: invitation.groupId,
+      action: 'member_added',
+      entityId: user.id,
+      actorId: user.id, // User added themselves by accepting
+    });
 
   } else {
     await db.update(invitations)

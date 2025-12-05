@@ -15,6 +15,13 @@
       "when": 1764656042419,
       "tag": "0001_omniscient_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764916643328,
+      "tag": "0002_small_starfox",
+      "breakpoints": true
     }
   ]
 }

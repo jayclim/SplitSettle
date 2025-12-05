@@ -1,22 +1,28 @@
-import { execSync } from 'child_process';
-import { db } from '@/lib/db';
+import { cleanTestData } from '@/scripts/clean-test-data';
+import { seedTestData } from '@/scripts/seed-test-data';
+import { db, client } from '@/lib/db';
 import { users, groups, expenses, expenseSplits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 describe('Expenses Integration Tests', () => {
     // Increase timeout for DB operations
-    jest.setTimeout(30000);
+    jest.setTimeout(60000);
 
-    beforeAll(() => {
+    beforeAll(async () => {
         // Reset and seed the test database
         console.log('🔄 Resetting test database...');
         try {
-            execSync('npm run test:reset', { stdio: 'inherit' });
+            await cleanTestData(true);
+            await seedTestData(true);
             console.log('✅ Test database reset complete.');
         } catch (error) {
             console.error('❌ Failed to reset test database:', error);
             throw error;
         }
+    });
+
+    afterAll(async () => {
+        await client.end();
     });
 
     it('should have seeded unequal split expense correctly', async () => {

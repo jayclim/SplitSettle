@@ -14,16 +14,18 @@ export async function syncUser() {
         where: eq(users.email, user.emailAddresses[0].emailAddress),
     });
 
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
+
     if (existingUser) {
         // If user exists but ID doesn't match (e.g. seeded user claiming account), update it.
         if (existingUser.id !== user.id) {
             console.log(`🔄 Syncing user ID for ${user.emailAddresses[0].emailAddress}: ${existingUser.id} -> ${user.id}`);
             await db.update(users)
-                .set({ id: user.id, avatarUrl: user.imageUrl, name: `${user.firstName} ${user.lastName}`.trim() })
+                .set({ id: user.id, avatarUrl: user.imageUrl, name: name })
                 .where(eq(users.id, existingUser.id));
 
             // Return the updated user object
-            return { ...existingUser, id: user.id, avatarUrl: user.imageUrl, name: `${user.firstName} ${user.lastName}`.trim() };
+            return { ...existingUser, id: user.id, avatarUrl: user.imageUrl, name: name };
         }
         return existingUser;
     }
@@ -31,7 +33,7 @@ export async function syncUser() {
     // Create new user
     const [newUser] = await db.insert(users).values({
         id: user.id,
-        name: `${user.firstName} ${user.lastName}`.trim(),
+        name: name,
         email: user.emailAddresses[0].emailAddress,
         image: user.imageUrl,
         avatarUrl: user.imageUrl,

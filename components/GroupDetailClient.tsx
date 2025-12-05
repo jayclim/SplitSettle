@@ -39,9 +39,10 @@ export function GroupDetailClient({ id }: GroupDetailClientProps) {
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [settleUpModalOpen, setSettleUpModalOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<Balance | null>(null);
-  const [activeTab, setActiveTab] = useState("expenses");
+  const [activeTab, setActiveTab] = useState("history");
 
   const getInitials = (name: string) => {
+    if (!name || name === 'null null') return '?';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -121,14 +122,21 @@ export function GroupDetailClient({ id }: GroupDetailClientProps) {
               </div>
             )}
           </div>
-          <GroupSettingsModal group={group} onGroupUpdated={() => refetchGroup()} />
+          <GroupSettingsModal 
+            group={group} 
+            onGroupUpdated={() => {
+              refetchGroup();
+              refetchBalances();
+              refetchExpenses();
+            }} 
+          />
         </div>
       </div>
 
       {/* Tabs */}
       <div className="w-full space-y-4">
         <div className="flex w-full bg-muted p-1 rounded-md">
-          {['expenses', 'balances', 'members'].map((tab) => (
+          {['history', 'balances', 'members'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -142,7 +150,7 @@ export function GroupDetailClient({ id }: GroupDetailClientProps) {
           ))}
         </div>
 
-        {activeTab === 'expenses' && (
+        {activeTab === 'history' && (
           <div className="space-y-4">
             <ExpenseHistory groupId={group._id} onAddExpense={() => setManualModalOpen(true)} />
           </div>
@@ -172,7 +180,7 @@ export function GroupDetailClient({ id }: GroupDetailClientProps) {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{balance.userName}</p>
+                              <p className="font-medium">{balance.userName === 'null null' ? 'Unknown User' : balance.userName}</p>
                               <p className="text-sm text-muted-foreground">
                                 {balanceInfo.label}
                               </p>
@@ -242,7 +250,7 @@ export function GroupDetailClient({ id }: GroupDetailClientProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{member.name}</p>
+                          <p className="font-medium">{(member.name && member.name !== 'null null') ? member.name : member.email}</p>
                           {member.isGhost ? (
                             <p className="text-sm text-muted-foreground italic">Ghost User</p>
                           ) : (

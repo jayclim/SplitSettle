@@ -179,6 +179,17 @@ export const invitations = pgTable('invitations', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const activityLogs = pgTable('activity_logs', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(), // 'member_added', 'member_removed'
+  entityId: text('entity_id').notNull(), // ID of the user being added/removed
+  actorId: text('actor_id').notNull(), // ID of the user performing the action
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // =================================
 //          RELATIONS
 // =================================
@@ -256,6 +267,36 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
+export const settlementsRelations = relations(settlements, ({ one }) => ({
+  group: one(groups, {
+    fields: [settlements.groupId],
+    references: [groups.id],
+  }),
+  payer: one(users, {
+    fields: [settlements.payerId],
+    references: [users.id],
+  }),
+  payee: one(users, {
+    fields: [settlements.payeeId],
+    references: [users.id],
+  }),
+}));
+
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  group: one(groups, {
+    fields: [activityLogs.groupId],
+    references: [groups.id],
+  }),
+  entity: one(users, {
+    fields: [activityLogs.entityId],
+    references: [users.id],
+  }),
+  actor: one(users, {
+    fields: [activityLogs.actorId],
+    references: [users.id],
+  }),
+}));
+
 // =================================
 //          TYPE EXPORTS
 // =================================
@@ -267,3 +308,4 @@ export type NewExpense = typeof expenses.$inferInsert;
 export type NewExpenseSplit = typeof expenseSplits.$inferInsert;
 export type NewMessage = typeof messages.$inferInsert;
 export type NewInvitation = typeof invitations.$inferInsert;
+export type NewActivityLog = typeof activityLogs.$inferInsert;
